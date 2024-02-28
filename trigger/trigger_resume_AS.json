@@ -1,0 +1,27 @@
+{
+	"name": "trigger_resume_AS",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "Pause_Resume_AS",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Command": "Resume"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2023-09-08T09:00:00",
+				"timeZone": "SE Asia Standard Time"
+			}
+		}
+	}
+}

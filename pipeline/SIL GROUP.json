@@ -1,0 +1,135 @@
+{
+	"name": "SIL GROUP",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup1",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderQuery": {
+							"value": "SELECT DISTINCT [ORDER] FROM [ADF].[ETL_JOB] WHERE job_sub_group = '@{pipeline().parameters.job_sub_group}'\nAND CASE WHEN '@{pipeline().parameters.job_id}'= 'ALL' THEN job_id ELSE CAST('@{pipeline().parameters.job_id}' AS BIGINT) END = job_id\nAND CASE WHEN '@{pipeline().parameters.job_group}'= 'ALL' THEN job_group ELSE '@{pipeline().parameters.job_group}' END = job_group\nAND\ncase\nWHEN\n'@{pipeline().parameters.group_number}' = 'ALL'  THEN '1'\nwhen '@{pipeline().parameters.group_number}' = '01' then [GROUP_01]\nwhen '@{pipeline().parameters.group_number}' = '02' then [GROUP_02]\nwhen '@{pipeline().parameters.group_number}' = '03' then [GROUP_03]\nwhen '@{pipeline().parameters.group_number}' = '04' then [GROUP_04]\nwhen '@{pipeline().parameters.group_number}' = '05' then [GROUP_05]\nwhen '@{pipeline().parameters.group_number}' = '06' then [GROUP_06]\nwhen '@{pipeline().parameters.group_number}' = '07' then [GROUP_07]\nwhen '@{pipeline().parameters.group_number}' = '08' then [GROUP_08]\nwhen '@{pipeline().parameters.group_number}' = '09' then [GROUP_09]\nwhen '@{pipeline().parameters.group_number}' = '10' then [GROUP_10] END = (CASE WHEN '@{pipeline().parameters.group_number}' = 'ALL'  THEN '1' ELSE '@{pipeline().parameters.group_name}' END)\nAND [ACTIVE_FLG] = 'Y'\nORDER BY [ORDER]",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "PGSWH",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "''",
+							"Table": "''"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup1').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "SIL_PIPELINE",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "SIL PIPELINE",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"p_batch_id": {
+										"value": "@pipeline().parameters.batch_id",
+										"type": "Expression"
+									},
+									"p_job_group": {
+										"value": "@pipeline().parameters.job_group",
+										"type": "Expression"
+									},
+									"p_job_id": {
+										"value": "@pipeline().parameters.job_id",
+										"type": "Expression"
+									},
+									"p_order": {
+										"value": "@item().ORDER",
+										"type": "Expression"
+									},
+									"group_name": {
+										"value": "@pipeline().parameters.group_name",
+										"type": "Expression"
+									},
+									"group_number": {
+										"value": "@pipeline().parameters.group_number",
+										"type": "Expression"
+									},
+									"p_job_sub_group": {
+										"value": "@pipeline().parameters.job_sub_group",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"job_sub_group": {
+				"type": "string",
+				"defaultValue": "SIL"
+			},
+			"job_id": {
+				"type": "string",
+				"defaultValue": "ALL"
+			},
+			"job_group": {
+				"type": "string"
+			},
+			"group_number": {
+				"type": "string",
+				"defaultValue": "ALL"
+			},
+			"group_name": {
+				"type": "string",
+				"defaultValue": "DX01"
+			},
+			"batch_id": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-23T07:01:39Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

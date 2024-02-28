@@ -1,0 +1,95 @@
+{
+	"name": "call_sp",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy data1",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"additionalColumns": [
+							{
+								"name": "Entity",
+								"value": "A03"
+							},
+							{
+								"name": "Doc_date1",
+								"value": "20230101"
+							},
+							{
+								"name": "Doc_date2",
+								"value": "20230131"
+							},
+							{
+								"name": "W_BATCH_ID",
+								"value": "20240108"
+							},
+							{
+								"name": "W_INSERT_DATE",
+								"value": "20240108"
+							},
+							{
+								"name": "W_DATASOURCE_NAME",
+								"value": "BRV"
+							}
+						],
+						"sqlReaderQuery": "exec [dbo].[usp_Kcd_BaoCaoCongNoHanThanhToan_TruDan] @_DocDate1 = 'JAN 01 2024',@_DocDate2 = 'JAN 31 2024',@_Account = '331',@_CustomerCode = '',@_lookupModeCustomer = 0,@_CustomerGroupCode = N'',@_Period  = 10,@_RepType = 1,@_IsPrepaymentInclude = 1,@_ForeignCurrencyOnly = 0,@_nUserId = 4,@_LangId  = 0,@_Ma_Dvcs = 'A16',@_CurrencyCode0 = 'VND',@_Detail = 0,@_GroupCodeRep = 'KV_MIENTRUNG',@_IsOverDue = 0,@_LAYOUT_XML = ''",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SqlDWSink",
+						"writeBehavior": "Insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "gs_bravo",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "''",
+							"name": "''"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "PGSWH",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "STG",
+							"Table": "W_FS_BRV_SOSANHDODANGTHEOTHANG"
+						}
+					}
+				]
+			}
+		],
+		"folder": {
+			"name": "TEST"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-23T07:01:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,137 @@
+{
+	"name": "POSTGRES PIPELINE",
+	"properties": {
+		"activities": [
+			{
+				"name": "EXECUTE POSTGRES SDE DIM",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "POSTGRES SDE DIM",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_batch_id": {
+							"value": "@pipeline().parameters.p_batch_id",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "EXECUTE POSTGRES SDE FACT",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "EXECUTE POSTGRES SDE DIM",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "POSTGRES SDE FACT",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_batch_id": {
+							"value": "@pipeline().parameters.p_batch_id",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "SIL GROUP DIM",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "EXECUTE POSTGRES SDE FACT",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "SIL GROUP",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"job_sub_group": "SIL DIM",
+						"job_id": "ALL",
+						"job_group": "PGSQL",
+						"group_number": "01",
+						"group_name": "DX01",
+						"batch_id": {
+							"value": "@pipeline().parameters.p_batch_id",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "SIL GROUP FACT",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "SIL GROUP DIM",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "SIL GROUP",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"job_sub_group": "SIL FACT",
+						"job_id": "ALL",
+						"job_group": "PGSQL",
+						"group_number": "01",
+						"group_name": "DX01",
+						"batch_id": {
+							"value": "@pipeline().parameters.p_batch_id",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"p_batch_id": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "POSTGRES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-23T07:01:39Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

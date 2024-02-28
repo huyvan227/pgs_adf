@@ -1,0 +1,16 @@
+{
+	"name": "BRAVO_DEV",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"connectionString": "integrated security=False;data source=172.22.60.6;initial catalog=B7R2_PVGasSouth;user id=tcdata",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiI3NjZhYTVkOS04YjUxLTQwMjktOTI2Ny1hZWFmNWQzZmE2MDQiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "IR-DEV",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

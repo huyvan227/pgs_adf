@@ -1,0 +1,243 @@
+{
+	"name": "BRAVO SDE FACT",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup1",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": "[ADF].[proc_etl_get_job]",
+						"storedProcedureParameters": {
+							"group_name": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.group_name",
+									"type": "Expression"
+								}
+							},
+							"group_number": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.group_number",
+									"type": "Expression"
+								}
+							},
+							"p_batch_id": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							},
+							"p_job_group": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.p_job_group",
+									"type": "Expression"
+								}
+							},
+							"p_job_id": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.p_job_id",
+									"type": "Expression"
+								}
+							},
+							"p_job_sub_group": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.p_job_sub_group",
+									"type": "Expression"
+								}
+							},
+							"p_order": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.p_order",
+									"type": "Expression"
+								}
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "PGSWH",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "''",
+							"Table": "''"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup1').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"batchCount": 2,
+					"activities": [
+						{
+							"name": "If Condition1",
+							"type": "IfCondition",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(1,1)",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "Execute Pipeline1",
+										"type": "ExecutePipeline",
+										"dependsOn": [],
+										"policy": {
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"pipeline": {
+												"referenceName": "BRAVO SDE FACT CHILD",
+												"type": "PipelineReference"
+											},
+											"waitOnCompletion": true,
+											"parameters": {
+												"job_script": {
+													"value": "@item().JOB_SCRIPT",
+													"type": "Expression"
+												},
+												"entity": {
+													"value": "@item().PARAM01",
+													"type": "Expression"
+												},
+												"p_batch_id": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"p_job_group": {
+													"value": "@pipeline().parameters.p_job_group",
+													"type": "Expression"
+												},
+												"p_job_id": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"p_order": {
+													"value": "@pipeline().parameters.p_order",
+													"type": "Expression"
+												},
+												"p_job_sub_group": {
+													"value": "@pipeline().parameters.p_job_sub_group",
+													"type": "Expression"
+												},
+												"group_name": {
+													"value": "@pipeline().parameters.group_name",
+													"type": "Expression"
+												},
+												"group_number": {
+													"value": "@pipeline().parameters.group_number",
+													"type": "Expression"
+												},
+												"target_table": {
+													"value": "@item().TARGET_TABLE",
+													"type": "Expression"
+												},
+												"target_schema": {
+													"value": "@item().TARGET_SCHEMA",
+													"type": "Expression"
+												},
+												"RUN_MANUAL": {
+													"value": "@pipeline().parameters.RUN_MANUAL",
+													"type": "Expression"
+												}
+											}
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"p_batch_id": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"p_job_group": {
+				"type": "string",
+				"defaultValue": "BRV"
+			},
+			"p_job_id": {
+				"type": "string",
+				"defaultValue": "ALL"
+			},
+			"p_order": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"p_job_sub_group": {
+				"type": "string",
+				"defaultValue": "SDE FACT"
+			},
+			"group_name": {
+				"type": "string",
+				"defaultValue": "DX01"
+			},
+			"group_number": {
+				"type": "string",
+				"defaultValue": "01"
+			},
+			"RUN_MANUAL": {
+				"type": "string",
+				"defaultValue": "0"
+			}
+		},
+		"variables": {
+			"script": {
+				"type": "String",
+				"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+			},
+			"Entity": {
+				"type": "Array"
+			},
+			"batch_id": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "BRAVO"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-26T11:40:11Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

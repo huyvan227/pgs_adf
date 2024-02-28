@@ -1,0 +1,142 @@
+{
+	"name": "BRAVO PIPELINE",
+	"properties": {
+		"activities": [
+			{
+				"name": "BRAVO SDE DIM",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "BRAVO SDE DIM",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_batch_id": {
+							"value": "@pipeline().parameters.p_batch_id",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "BRAVO SDE FACT",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "BRAVO SDE DIM",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "BRAVO SDE FACT",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_batch_id": {
+							"value": "@pipeline().parameters.p_batch_id",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "SIL_GROUP DIM",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "BRAVO SDE FACT",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "SIL GROUP",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"job_sub_group": "SIL DIM",
+						"job_id": "ALL",
+						"job_group": "BRV",
+						"group_number": "01",
+						"group_name": "DX01",
+						"batch_id": {
+							"value": "@pipeline().parameters.p_batch_id",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "SIL_GROUP FACT",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "SIL_GROUP DIM",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "SIL GROUP",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"job_sub_group": "SIL FACT",
+						"job_id": "ALL",
+						"job_group": "BRV",
+						"group_number": "01",
+						"group_name": "DX01",
+						"batch_id": {
+							"value": "@pipeline().parameters.p_batch_id",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"p_batch_id": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"batch_id": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "BRAVO"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-23T07:01:39Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

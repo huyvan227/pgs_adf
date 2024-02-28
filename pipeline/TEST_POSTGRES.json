@@ -1,0 +1,86 @@
+{
+	"name": "TEST_POSTGRES",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy data1",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzurePostgreSqlSource",
+						"additionalColumns": [
+							{
+								"name": "W_BATCH_ID",
+								"value": "1"
+							},
+							{
+								"name": "W_INSERT_DT",
+								"value": {
+									"value": "@addhours(utcnow(),7)",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "W_DATASOURCE_NAME",
+								"value": "PGSQL"
+							}
+						],
+						"query": "SELECT * FROM public.\"DN_DANH_MUC_KHACH_HANG_MA_TRAM\" where 1=1",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SqlDWSink",
+						"writeBehavior": "Insert",
+						"sqlWriterUseTableLock": false,
+						"tableOption": "autoCreate",
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "POSTGRES",
+						"type": "DatasetReference",
+						"parameters": {
+							"SCHEMA": "''",
+							"TABLE_NAME": "''"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "PGSWH",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "STG",
+							"Table": "W_DS_PGSQL_DN_DANH_MUC_KHACH_HANG_MA_TRAM"
+						}
+					}
+				]
+			}
+		],
+		"folder": {
+			"name": "POSTGRES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-12-12T10:58:04Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

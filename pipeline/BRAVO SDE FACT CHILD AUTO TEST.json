@@ -1,0 +1,202 @@
+{
+	"name": "BRAVO SDE FACT CHILD AUTO TEST",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup1",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"sqlReaderQuery": "select\nconvert(varchar(8),dateadd(day,1,eomonth(dateadd(hour,7,GETDATE()),-1)),112) FROM_DATE,\nconvert(varchar(8),eomonth(dateadd(hour,7,GETDATE())),112) TO_DATE,\nMONTHNAME(CURRENT_DATE()) CURRENT_dt\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "gs_bravo",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "''",
+							"name": "''"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup1').output.value",
+						"type": "Expression"
+					},
+					"batchCount": 3,
+					"activities": [
+						{
+							"name": "Copy data1_copy1",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"additionalColumns": [
+										{
+											"name": "Entity",
+											"value": {
+												"value": "@{pipeline().parameters.ENTITY}",
+												"type": "Expression"
+											}
+										},
+										{
+											"name": "W_BATCH_ID",
+											"value": {
+												"value": "@pipeline().parameters.W_BATCH_ID",
+												"type": "Expression"
+											}
+										},
+										{
+											"name": "W_INSERT_DATE",
+											"value": {
+												"value": "@addhours(utcnow(),7)",
+												"type": "Expression"
+											}
+										},
+										{
+											"name": "W_DATASOURCE_NAME",
+											"value": "BRAVO"
+										},
+										{
+											"name": "Doc_date1",
+											"value": {
+												"value": "@item().FROM_DATE",
+												"type": "Expression"
+											}
+										},
+										{
+											"name": "Doc_date2",
+											"value": {
+												"value": "@item().TO_DATE",
+												"type": "Expression"
+											}
+										},
+										{
+											"name": "W_ACCOUNT",
+											"value": {
+												"value": "@pipeline().parameters.W_ACCOUNT",
+												"type": "Expression"
+											}
+										}
+									],
+									"sqlReaderQuery": {
+										"value": "@replace(replace(replace(pipeline().parameters.script,'{param_2}',item().TO_DATE),'{param_3}',pipeline().parameters.ENTITY),'{param_1}',item().FROM_DATE)",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "SqlDWSink",
+									"writeBehavior": "Insert",
+									"sqlWriterUseTableLock": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "gs_bravo",
+									"type": "DatasetReference",
+									"parameters": {
+										"schema": "''",
+										"name": "''"
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "PGSWH",
+									"type": "DatasetReference",
+									"parameters": {
+										"Schema": "''",
+										"Table": "''"
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"ENTITY": {
+				"type": "string",
+				"defaultValue": "A01"
+			},
+			"script": {
+				"type": "string",
+				"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+			},
+			"TGT_TABLE": {
+				"type": "string",
+				"defaultValue": "[STG].[W_BRAVO_CONSO_GL_FOR_DA_FS]"
+			},
+			"W_ACCOUNT": {
+				"type": "string"
+			},
+			"W_BATCH_ID": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"RUN_MANUAL": {
+				"type": "int",
+				"defaultValue": 0
+			}
+		},
+		"variables": {
+			"script": {
+				"type": "String",
+				"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+			}
+		},
+		"folder": {
+			"name": "TEST"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-19T10:03:10Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

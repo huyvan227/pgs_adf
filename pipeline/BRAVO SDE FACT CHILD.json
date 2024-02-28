@@ -1,0 +1,239 @@
+{
+	"name": "BRAVO SDE FACT CHILD",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "Entity",
+					"value": {
+						"value": "@pipeline().parameters.entity",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Set variable1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@split(variables('Entity'), ',')",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "If Condition1",
+							"type": "IfCondition",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(pipeline().parameters.RUN_MANUAL,'1')",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "EXECUTE BRAVO SDE FACT CHILD AUTO",
+										"type": "ExecutePipeline",
+										"dependsOn": [],
+										"policy": {
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"pipeline": {
+												"referenceName": "BRAVO SDE FACT CHILD AUTO",
+												"type": "PipelineReference"
+											},
+											"waitOnCompletion": true,
+											"parameters": {
+												"job_script": {
+													"value": "@pipeline().parameters.job_script",
+													"type": "Expression"
+												},
+												"entity": {
+													"value": "@item()",
+													"type": "Expression"
+												},
+												"p_batch_id": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"p_job_group": {
+													"value": "@pipeline().parameters.p_job_group",
+													"type": "Expression"
+												},
+												"p_job_id": {
+													"value": "@pipeline().parameters.p_job_id",
+													"type": "Expression"
+												},
+												"p_order": {
+													"value": "@pipeline().parameters.p_order",
+													"type": "Expression"
+												},
+												"p_job_sub_group": {
+													"value": "@pipeline().parameters.p_job_sub_group",
+													"type": "Expression"
+												},
+												"group_name": {
+													"value": "@pipeline().parameters.group_name",
+													"type": "Expression"
+												},
+												"group_number": {
+													"value": "@pipeline().parameters.group_number",
+													"type": "Expression"
+												},
+												"target_table": {
+													"value": "@pipeline().parameters.target_table",
+													"type": "Expression"
+												},
+												"target_schema": {
+													"value": "@pipeline().parameters.target_schema",
+													"type": "Expression"
+												}
+											}
+										}
+									}
+								],
+								"ifTrueActivities": [
+									{
+										"name": "Execute Pipeline1",
+										"type": "ExecutePipeline",
+										"dependsOn": [],
+										"policy": {
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"pipeline": {
+												"referenceName": "BRAVO SDE FACT CHILD MANUAL",
+												"type": "PipelineReference"
+											},
+											"waitOnCompletion": true,
+											"parameters": {
+												"job_script": {
+													"value": "@pipeline().parameters.job_script",
+													"type": "Expression"
+												},
+												"entity": {
+													"value": "@item()",
+													"type": "Expression"
+												},
+												"p_batch_id": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"p_job_group": {
+													"value": "@pipeline().parameters.p_job_group",
+													"type": "Expression"
+												},
+												"p_job_id": {
+													"value": "@pipeline().parameters.p_job_id",
+													"type": "Expression"
+												},
+												"p_order": {
+													"value": "@pipeline().parameters.p_order",
+													"type": "Expression"
+												},
+												"p_job_sub_group": {
+													"value": "@pipeline().parameters.p_job_group",
+													"type": "Expression"
+												},
+												"group_name": {
+													"value": "@pipeline().parameters.group_name",
+													"type": "Expression"
+												},
+												"group_number": {
+													"value": "@pipeline().parameters.group_number",
+													"type": "Expression"
+												},
+												"target_table": {
+													"value": "@pipeline().parameters.target_table",
+													"type": "Expression"
+												},
+												"target_schema": {
+													"value": "@pipeline().parameters.target_schema",
+													"type": "Expression"
+												}
+											}
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"job_script": {
+				"type": "string"
+			},
+			"entity": {
+				"type": "string"
+			},
+			"p_batch_id": {
+				"type": "string"
+			},
+			"p_job_group": {
+				"type": "string"
+			},
+			"p_job_id": {
+				"type": "string"
+			},
+			"p_order": {
+				"type": "string"
+			},
+			"p_job_sub_group": {
+				"type": "string"
+			},
+			"group_name": {
+				"type": "string"
+			},
+			"group_number": {
+				"type": "string"
+			},
+			"target_table": {
+				"type": "string"
+			},
+			"target_schema": {
+				"type": "string"
+			},
+			"RUN_MANUAL": {
+				"type": "string",
+				"defaultValue": "0"
+			}
+		},
+		"variables": {
+			"Entity": {
+				"type": "String"
+			},
+			"aaaa": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "BRAVO"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-20T10:24:21Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,62 @@
+{
+	"name": "Pause_Resume_Synapse",
+	"properties": {
+		"activities": [
+			{
+				"name": "Pause_Resume_Synapse",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 3,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": {
+						"value": "@concat('https://management.azure.com/subscriptions/',pipeline().parameters.SubscriptionId,'/resourceGroups/',pipeline().parameters.ResourceGroupName,'/providers/Microsoft.Synapse/workspaces/',pipeline().parameters.ServerName,'/sqlPools/',pipeline().parameters.DatabaseName,'/',pipeline().parameters.Command,'?api-version=2019-06-01-preview') \n",
+						"type": "Expression"
+					},
+					"body": {
+						"dummy": "dummy"
+					},
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://management.azure.com/"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"SubscriptionId": {
+				"type": "string",
+				"defaultValue": "e008c3a2-a80b-478f-b29d-b687320d2fd2"
+			},
+			"ResourceGroupName": {
+				"type": "string",
+				"defaultValue": "BI-RSG-DEV"
+			},
+			"Region": {
+				"type": "string",
+				"defaultValue": "Southeast Asia"
+			},
+			"ServerName": {
+				"type": "string",
+				"defaultValue": "synapse-ws-rsg-dev"
+			},
+			"DatabaseName": {
+				"type": "string",
+				"defaultValue": "pgsdwh"
+			},
+			"Command": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-09-22T04:34:48Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

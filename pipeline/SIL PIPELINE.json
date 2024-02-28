@@ -1,0 +1,373 @@
+{
+	"name": "SIL PIPELINE",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach1_copy1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup').output.value",
+						"type": "Expression"
+					},
+					"batchCount": 3,
+					"activities": [
+						{
+							"name": "If Condition1_copy1_copy1",
+							"type": "IfCondition",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(1,1)",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "Stored procedure1",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "start",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": {
+												"value": "@item().JOB_SCRIPT",
+												"type": "Expression"
+											},
+											"storedProcedureParameters": {
+												"p_batch_id": {
+													"value": {
+														"value": "@pipeline().parameters.p_batch_id",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "PGSWH",
+											"type": "LinkedServiceReference"
+										}
+									},
+									{
+										"name": "start",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[ADF].[proc_etl_log_message]",
+											"storedProcedureParameters": {
+												"p_batch_id": {
+													"value": {
+														"value": "@pipeline().parameters.p_batch_id",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"p_error_code": {
+													"value": "",
+													"type": "String"
+												},
+												"p_error_message": {
+													"value": "",
+													"type": "String"
+												},
+												"p_job_id": {
+													"value": {
+														"value": "@item().JOB_ID",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"p_log_message": {
+													"value": {
+														"value": "Start load table @{item().TARGET_TABLE}",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"p_log_status": {
+													"value": "",
+													"type": "String"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "PGSWH",
+											"type": "LinkedServiceReference"
+										}
+									},
+									{
+										"name": "end_fail",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "Stored procedure1",
+												"dependencyConditions": [
+													"Failed"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[ADF].[proc_etl_log_message]",
+											"storedProcedureParameters": {
+												"p_batch_id": {
+													"value": {
+														"value": "@pipeline().parameters.p_batch_id",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"p_error_code": {
+													"value": "",
+													"type": "String"
+												},
+												"p_error_message": {
+													"value": "",
+													"type": "String"
+												},
+												"p_job_id": {
+													"value": {
+														"value": "@item().JOB_ID",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"p_log_message": {
+													"value": {
+														"value": "Load failed table @{item().TARGET_TABLE}",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"p_log_status": {
+													"value": "ERROR",
+													"type": "String"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "PGSWH",
+											"type": "LinkedServiceReference"
+										}
+									},
+									{
+										"name": "end_success",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "Stored procedure1",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[ADF].[proc_etl_log_message]",
+											"storedProcedureParameters": {
+												"p_batch_id": {
+													"value": {
+														"value": "@pipeline().parameters.p_batch_id",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"p_error_code": {
+													"value": "",
+													"type": "String"
+												},
+												"p_error_message": {
+													"value": "",
+													"type": "String"
+												},
+												"p_job_id": {
+													"value": {
+														"value": "@item().JOB_ID",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"p_log_message": {
+													"value": {
+														"value": "Finished load table @{item().TARGET_TABLE}",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"p_log_status": {
+													"value": "END",
+													"type": "String"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "PGSWH",
+											"type": "LinkedServiceReference"
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Lookup",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": "[ADF].[proc_etl_get_job]",
+						"storedProcedureParameters": {
+							"group_name": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.group_name",
+									"type": "Expression"
+								}
+							},
+							"group_number": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.group_number",
+									"type": "Expression"
+								}
+							},
+							"p_batch_id": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							},
+							"p_job_group": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.p_job_group",
+									"type": "Expression"
+								}
+							},
+							"p_job_id": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.p_job_id",
+									"type": "Expression"
+								}
+							},
+							"p_job_sub_group": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.p_job_sub_group",
+									"type": "Expression"
+								}
+							},
+							"p_order": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.p_order",
+									"type": "Expression"
+								}
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "PGSWH",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "''",
+							"Table": "''"
+						}
+					},
+					"firstRowOnly": false
+				}
+			}
+		],
+		"parameters": {
+			"p_batch_id": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"p_job_group": {
+				"type": "string"
+			},
+			"p_job_id": {
+				"type": "string",
+				"defaultValue": "ALL"
+			},
+			"p_order": {
+				"type": "string",
+				"defaultValue": "ALL"
+			},
+			"group_name": {
+				"type": "string",
+				"defaultValue": "DX01"
+			},
+			"group_number": {
+				"type": "string",
+				"defaultValue": "ALL"
+			},
+			"p_job_sub_group": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-23T07:01:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

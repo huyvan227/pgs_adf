@@ -1,0 +1,33 @@
+{
+	"name": "PGSWH",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "PGSWH",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"Schema": {
+				"type": "string",
+				"defaultValue": "ADF"
+			},
+			"Table": {
+				"type": "string",
+				"defaultValue": "ETL_JOB"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().Schema",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().Table",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

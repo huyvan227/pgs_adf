@@ -1,0 +1,9 @@
+{
+	"name": "PGS-ADF-DEV",
+	"location": "southeastasia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "e6daea52-6e00-484c-8631-19ff73cdc7cd",
+		"tenantId": "d0f86436-dbeb-4e04-bde7-7f64d4f5b088"
+	}
+}

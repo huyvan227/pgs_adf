@@ -1,0 +1,188 @@
+{
+	"name": "MASTER PIPELINE",
+	"properties": {
+		"activities": [
+			{
+				"name": "Resume_Synapse",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Pause_Resume_Synapse",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"Command": "Resume"
+					}
+				}
+			},
+			{
+				"name": "get batch id",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Resume_Synapse",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": "[ADF].[proc_etl_get_batch_id]",
+						"storedProcedureParameters": {
+							"p_batch_id": {
+								"value": null
+							},
+							"p_batch_type_id": {
+								"value": "0"
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "PGSWH",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "''",
+							"Table": "''"
+						}
+					}
+				}
+			},
+			{
+				"name": "Set batch id",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "get batch id",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "batch_id",
+					"value": {
+						"value": "@{string(activity('get batch id').output.firstRow.BATCH_ID)}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "SEND EMAIL NOTIFICATION",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ETL_PIPELINE",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "SEND EMAIL NOTIFICATION",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_batch_id": {
+							"value": "@variables('batch_id')",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "ETL_PIPELINE",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set batch id",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "ETL_PIPELINE",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_batch_id": {
+							"value": "@variables('batch_id')",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Pause_Synapse",
+				"type": "ExecutePipeline",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [
+					{
+						"activity": "SEND EMAIL NOTIFICATION",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Pause_Resume_Synapse",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"Command": "Pause"
+					}
+				}
+			}
+		],
+		"variables": {
+			"batch_id": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-28T08:50:25Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

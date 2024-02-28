@@ -1,0 +1,145 @@
+{
+	"name": "loop entity",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup1_copy2",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderQuery": {
+							"value": "select  * from [DWH].[W_D_MA_DVCS] where 1=1\r\nAND CASE WHEN '@{pipeline().parameters.ENTITY}' = 'ALL' THEN [MA_DVCS] ELSE '@{pipeline().parameters.ENTITY}' END = [MA_DVCS]",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "PGSWH",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "''",
+							"Table": "''"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1_copy2",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup1_copy2",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup1_copy2').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"batchCount": 3,
+					"activities": [
+						{
+							"name": "If Condition1_copy1",
+							"type": "IfCondition",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(1,1)",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "pipeline1_copy1",
+										"type": "ExecutePipeline",
+										"dependsOn": [],
+										"policy": {
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"pipeline": {
+												"referenceName": "BRAVO SDE FACT CHILD TEST",
+												"type": "PipelineReference"
+											},
+											"waitOnCompletion": true,
+											"parameters": {
+												"ENTITY": {
+													"value": "@{item().Ma_Dvcs}",
+													"type": "Expression"
+												},
+												"script": {
+													"value": "@pipeline().parameters.script",
+													"type": "Expression"
+												},
+												"TGT_TABLE": {
+													"value": "@pipeline().parameters.TARGET_TABLE",
+													"type": "Expression"
+												},
+												"W_ACCOUNT": {
+													"value": "@pipeline().parameters.W_ACCOUNT",
+													"type": "Expression"
+												},
+												"W_BATCH_ID": {
+													"value": "@pipeline().parameters.W_BATCH_ID",
+													"type": "Expression"
+												},
+												"RUN_MANUAL": {
+													"value": "@pipeline().parameters.RUN_MANUAL",
+													"type": "Expression"
+												}
+											}
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"TARGET_TABLE": {
+				"type": "string"
+			},
+			"ENTITY": {
+				"type": "string"
+			},
+			"script": {
+				"type": "string"
+			},
+			"W_ACCOUNT": {
+				"type": "string"
+			},
+			"W_BATCH_ID": {
+				"type": "string"
+			},
+			"RUN_MANUAL": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "TEST"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-19T10:03:10Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

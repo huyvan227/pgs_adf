@@ -1,0 +1,62 @@
+{
+	"name": "Pause_Resume_AS",
+	"properties": {
+		"activities": [
+			{
+				"name": "Pause_Resume_AS",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 3,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": {
+						"value": "@concat('https://management.azure.com/subscriptions/',pipeline().parameters.SubscriptionId,'/resourceGroups/',pipeline().parameters.ResourceGroupName,'/providers/Microsoft.AnalysisServices/servers/',pipeline().parameters.ServerName,'/',pipeline().parameters.Command,'?api-version=2017-08-01')",
+						"type": "Expression"
+					},
+					"body": {
+						"dummy": "dummy"
+					},
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://management.azure.com/"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"SubscriptionId": {
+				"type": "string",
+				"defaultValue": "e008c3a2-a80b-478f-b29d-b687320d2fd2"
+			},
+			"ResourceGroupName": {
+				"type": "string",
+				"defaultValue": "BI-RSG-DEV"
+			},
+			"Region": {
+				"type": "string",
+				"defaultValue": "Southeast Asia"
+			},
+			"ServerName": {
+				"type": "string",
+				"defaultValue": "pgsasdev"
+			},
+			"DatabaseName": {
+				"type": "string",
+				"defaultValue": "pgsdwh"
+			},
+			"Command": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-09-08T05:04:35Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

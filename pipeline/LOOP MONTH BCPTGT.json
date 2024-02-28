@@ -1,0 +1,178 @@
+{
+	"name": "LOOP MONTH BCPTGT",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup1_copy2",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "CSV",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": "fssyndev",
+							"folder": "csv",
+							"filname": "from_to_date.txt"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1_copy2",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup1_copy2",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup1_copy2').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"batchCount": 3,
+					"activities": [
+						{
+							"name": "BRAVO SDE FACT BCPTGT",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "BRAVO SDE FACT BCPTGT",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"ENTITY": {
+										"value": "@pipeline().parameters.ENTITY",
+										"type": "Expression"
+									},
+									"FROM_DATE": {
+										"value": "@{item().FROM_DATE}",
+										"type": "Expression"
+									},
+									"TO_DATE": {
+										"value": "@{item().TO_DATE}",
+										"type": "Expression"
+									},
+									"p_batch_id": {
+										"value": "@pipeline().parameters.p_batch_id",
+										"type": "Expression"
+									},
+									"p_job_group": {
+										"value": "@pipeline().parameters.p_job_group",
+										"type": "Expression"
+									},
+									"p_job_id": {
+										"value": "@pipeline().parameters.p_job_id",
+										"type": "Expression"
+									},
+									"p_order": {
+										"value": "@pipeline().parameters.p_order",
+										"type": "Expression"
+									},
+									"p_job_sub_group": {
+										"value": "@pipeline().parameters.p_job_sub_group",
+										"type": "Expression"
+									},
+									"group_name": {
+										"value": "@pipeline().parameters.group_name",
+										"type": "Expression"
+									},
+									"group_number": {
+										"value": "@pipeline().parameters.group_number",
+										"type": "Expression"
+									},
+									"W_ACCOUNT": {
+										"value": "@pipeline().parameters.W_ACCOUNT",
+										"type": "Expression"
+									},
+									"MONTH": {
+										"value": "@{string(int(formatDateTime(item().FROM_DATE,'MM')))}",
+										"type": "Expression"
+									},
+									"YEAR": {
+										"value": "@{formatDateTime(item().FROM_DATE,'yyyy')}",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"ENTITY": {
+				"type": "string",
+				"defaultValue": "ALL"
+			},
+			"W_ACCOUNT": {
+				"type": "string"
+			},
+			"p_batch_id": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"p_job_group": {
+				"type": "string",
+				"defaultValue": "BRV"
+			},
+			"p_job_id": {
+				"type": "string"
+			},
+			"p_order": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"p_job_sub_group": {
+				"type": "string",
+				"defaultValue": "SDE FACT"
+			},
+			"group_name": {
+				"type": "string",
+				"defaultValue": "DX01"
+			},
+			"group_number": {
+				"type": "string",
+				"defaultValue": "ALL"
+			}
+		},
+		"folder": {
+			"name": "TEST"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-19T10:03:10Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

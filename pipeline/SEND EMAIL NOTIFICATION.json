@@ -1,0 +1,43 @@
+{
+	"name": "SEND EMAIL NOTIFICATION",
+	"properties": {
+		"activities": [
+			{
+				"name": "SEND EMAIL",
+				"type": "AzureFunctionActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"functionName": "send_email",
+					"method": "POST",
+					"body": {
+						"value": "{\n    \"batch_id\" : \"@{pipeline().parameters.p_batch_id}\"\n}",
+						"type": "Expression"
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AZURE_FUNCTION",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"p_batch_id": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "FUNCTION APP"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-23T07:01:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

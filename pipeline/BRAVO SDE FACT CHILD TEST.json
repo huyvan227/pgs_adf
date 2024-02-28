@@ -1,0 +1,192 @@
+{
+	"name": "BRAVO SDE FACT CHILD TEST",
+	"properties": {
+		"activities": [
+			{
+				"name": "If Condition1",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.RUN_MANUAL,'0')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "BRAVO SDE FACT CHILD",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "BRAVO SDE FACT CHILD MANUAL2",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"ENTITY": {
+										"value": "@pipeline().parameters.ENTITY",
+										"type": "Expression"
+									},
+									"script": {
+										"value": "@pipeline().parameters.script",
+										"type": "Expression"
+									},
+									"TGT_TABLE": {
+										"value": "@pipeline().parameters.TGT_TABLE",
+										"type": "Expression"
+									},
+									"W_ACCOUNT": {
+										"value": "@pipeline().parameters.W_ACCOUNT",
+										"type": "Expression"
+									},
+									"W_BATCH_ID": {
+										"value": "@pipeline().parameters.W_BATCH_ID",
+										"type": "Expression"
+									},
+									"DB": {
+										"value": "@pipeline().parameters.DB",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "BRAVO SDE FACT CHILD_copy1",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "BRAVO SDE FACT CHILD MANUAL2",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"ENTITY": {
+										"value": "@pipeline().parameters.ENTITY",
+										"type": "Expression"
+									},
+									"script": {
+										"value": "@pipeline().parameters.script",
+										"type": "Expression"
+									},
+									"TGT_TABLE": {
+										"value": "@pipeline().parameters.TGT_TABLE",
+										"type": "Expression"
+									},
+									"W_ACCOUNT": {
+										"value": "@pipeline().parameters.W_ACCOUNT",
+										"type": "Expression"
+									},
+									"W_BATCH_ID": {
+										"value": "@pipeline().parameters.W_BATCH_ID",
+										"type": "Expression"
+									},
+									"DB": {
+										"value": "@pipeline().parameters.DB",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "BRAVO SDE FACT CHILD AUTO",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "BRAVO SDE FACT CHILD AUTO2",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"ENTITY": {
+										"value": "@pipeline().parameters.ENTITY",
+										"type": "Expression"
+									},
+									"script": {
+										"value": "@pipeline().parameters.script",
+										"type": "Expression"
+									},
+									"TGT_TABLE": {
+										"value": "@pipeline().parameters.TGT_TABLE",
+										"type": "Expression"
+									},
+									"W_ACCOUNT": {
+										"value": "@pipeline().parameters.W_ACCOUNT",
+										"type": "Expression"
+									},
+									"W_BATCH_ID": {
+										"value": "@pipeline().parameters.W_BATCH_ID",
+										"type": "Expression"
+									},
+									"DB": {
+										"value": "@pipeline().parameters.DB",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"ENTITY": {
+				"type": "string",
+				"defaultValue": "A01"
+			},
+			"script": {
+				"type": "string",
+				"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+			},
+			"TGT_TABLE": {
+				"type": "string",
+				"defaultValue": "[STG].[W_BRAVO_CONSO_GL_FOR_DA_FS]"
+			},
+			"W_ACCOUNT": {
+				"type": "string"
+			},
+			"W_BATCH_ID": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"DB": {
+				"type": "string"
+			},
+			"RUN_MANUAL": {
+				"type": "string",
+				"defaultValue": "0"
+			}
+		},
+		"variables": {
+			"script": {
+				"type": "String",
+				"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+			},
+			"batch_id": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "TEST"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-19T10:03:10Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

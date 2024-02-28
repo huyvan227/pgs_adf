@@ -1,0 +1,66 @@
+{
+	"name": "ETL_PIPELINE",
+	"properties": {
+		"activities": [
+			{
+				"name": "BRAVO PIPELINE",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "POSTGRES PIPELINE",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "BRAVO PIPELINE",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_batch_id": {
+							"value": "@pipeline().parameters.p_batch_id",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "POSTGRES PIPELINE",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "POSTGRES PIPELINE",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_batch_id": {
+							"value": "@pipeline().parameters.p_batch_id",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"p_batch_id": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-28T08:50:24Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

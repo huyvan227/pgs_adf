@@ -1,0 +1,251 @@
+{
+	"name": "SDE",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get Job",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": "[ADF].[proc_etl_get_job]",
+						"storedProcedureParameters": {
+							"group_name": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.GROUP_NAME",
+									"type": "Expression"
+								}
+							},
+							"group_number": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.GROUP_NUMBER",
+									"type": "Expression"
+								}
+							},
+							"p_batch_id": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.BATCH_ID",
+									"type": "Expression"
+								}
+							},
+							"p_job_group": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.JOB_GROUP",
+									"type": "Expression"
+								}
+							},
+							"p_job_id": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.JOB_ID",
+									"type": "Expression"
+								}
+							},
+							"p_job_sub_group": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.JOB_SUB_GROUP",
+									"type": "Expression"
+								}
+							},
+							"p_order": {
+								"type": "String",
+								"value": "1"
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "PGSWH",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "''",
+							"Table": "''"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Get Job",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get Job').output.value",
+						"type": "Expression"
+					},
+					"batchCount": 1,
+					"activities": [
+						{
+							"name": "Start Log",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[ADF].[proc_etl_log_message]",
+								"storedProcedureParameters": {
+									"p_batch_id": {
+										"value": {
+											"value": "@pipeline().parameters.BATCH_ID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"p_error_code": {
+										"value": "",
+										"type": "String"
+									},
+									"p_error_message": {
+										"value": "",
+										"type": "String"
+									},
+									"p_job_id": {
+										"value": {
+											"value": "@pipeline().parameters.JOB_ID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"p_log_message": {
+										"value": "start job",
+										"type": "String"
+									},
+									"p_log_status": {
+										"value": "START ",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "PGSWH",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Copy data1",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "Start Log",
+									"dependencyConditions": [
+										"Completed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "SqlDWSink",
+									"writeBehavior": "Insert",
+									"sqlWriterUseTableLock": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "gs_bravo",
+									"type": "DatasetReference",
+									"parameters": {
+										"schema": "''",
+										"name": "''"
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "PGSWH",
+									"type": "DatasetReference",
+									"parameters": {
+										"Schema": "''",
+										"Table": "''"
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"BATCH_ID": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"JOB_ID": {
+				"type": "string"
+			},
+			"JOB_SUB_GROUP": {
+				"type": "string",
+				"defaultValue": "SDE"
+			},
+			"GROUP_NUMBER": {
+				"type": "string",
+				"defaultValue": "01"
+			},
+			"GROUP_NAME": {
+				"type": "string",
+				"defaultValue": "DX01"
+			},
+			"JOB_GROUP": {
+				"type": "string",
+				"defaultValue": "BRV"
+			}
+		},
+		"folder": {
+			"name": "TEST"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-02-23T07:01:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
