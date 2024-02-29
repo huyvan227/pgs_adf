@@ -1,0 +1,51 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "pgs-adf-prd"
+		},
+		"AZURE_FUNCTION_functionKey": {
+			"value": ""
+		},
+		"AZURE_POSTGRES_PRD_connectionString": {
+			"value": ""
+		},
+		"AzureDataLakeStorage1_accountKey": {
+			"value": ""
+		},
+		"BRAVO_DEV_connectionString": {
+			"value": ""
+		},
+		"Bravo_connectionString": {
+			"value": ""
+		},
+		"PGSWH_connectionString": {
+			"value": ""
+		},
+		"AZURE_FUNCTION_properties_typeProperties_functionAppUrl": {
+			"value": "https://send-noti-func.azurewebsites.net"
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"value": "https://adls2syndev.dfs.core.windows.net/"
+		},
+		"trigger_pause_synapse_6pm_properties_Pause_Resume_Synapse_parameters_Command": {
+			"value": "Pause"
+		},
+		"trigger_resume_AS_properties_Pause_Resume_AS_parameters_Command": {
+			"value": "Resume"
+		},
+		"trigger_resume_synapse_properties_Pause_Resume_Synapse_parameters_Command": {
+			"value": "Resume"
+		},
+		"trigger_suspend_AS_properties_Pause_Resume_AS_parameters_Command": {
+			"value": "Suspend"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}

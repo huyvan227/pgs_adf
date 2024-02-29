@@ -1,0 +1,166 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "pgs-adf-prd"
+		},
+		"AZURE_FUNCTION_functionKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'functionKey' of 'AZURE_FUNCTION'"
+		},
+		"AZURE_POSTGRES_PRD_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AZURE_POSTGRES_PRD'"
+		},
+		"AzureDataLakeStorage1_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'AzureDataLakeStorage1'"
+		},
+		"BRAVO_DEV_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'BRAVO_DEV'"
+		},
+		"Bravo_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Bravo'"
+		},
+		"PGSWH_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'PGSWH'"
+		},
+		"AZURE_FUNCTION_properties_typeProperties_functionAppUrl": {
+			"type": "string",
+			"defaultValue": "https://send-noti-func.azurewebsites.net"
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://adls2syndev.dfs.core.windows.net/"
+		},
+		"trigger_pause_synapse_6pm_properties_Pause_Resume_Synapse_parameters_Command": {
+			"type": "string",
+			"defaultValue": "Pause"
+		},
+		"trigger_resume_AS_properties_Pause_Resume_AS_parameters_Command": {
+			"type": "string",
+			"defaultValue": "Resume"
+		},
+		"trigger_resume_synapse_properties_Pause_Resume_Synapse_parameters_Command": {
+			"type": "string",
+			"defaultValue": "Resume"
+		},
+		"trigger_suspend_AS_properties_Pause_Resume_AS_parameters_Command": {
+			"type": "string",
+			"defaultValue": "Suspend"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "pgs-adf-prd_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"AZURE_FUNCTION_functionKey": {
+						"value": "[parameters('AZURE_FUNCTION_functionKey')]"
+					},
+					"AZURE_POSTGRES_PRD_connectionString": {
+						"value": "[parameters('AZURE_POSTGRES_PRD_connectionString')]"
+					},
+					"AzureDataLakeStorage1_accountKey": {
+						"value": "[parameters('AzureDataLakeStorage1_accountKey')]"
+					},
+					"PGSWH_connectionString": {
+						"value": "[parameters('PGSWH_connectionString')]"
+					},
+					"BRAVO_DEV_connectionString": {
+						"value": "[parameters('BRAVO_DEV_connectionString')]"
+					},
+					"Bravo_connectionString": {
+						"value": "[parameters('Bravo_connectionString')]"
+					},
+					"AZURE_FUNCTION_properties_typeProperties_functionAppUrl": {
+						"value": "[parameters('AZURE_FUNCTION_properties_typeProperties_functionAppUrl')]"
+					},
+					"AzureDataLakeStorage1_properties_typeProperties_url": {
+						"value": "[parameters('AzureDataLakeStorage1_properties_typeProperties_url')]"
+					},
+					"trigger_pause_synapse_6pm_properties_Pause_Resume_Synapse_parameters_Command": {
+						"value": "[parameters('trigger_pause_synapse_6pm_properties_Pause_Resume_Synapse_parameters_Command')]"
+					},
+					"trigger_resume_AS_properties_Pause_Resume_AS_parameters_Command": {
+						"value": "[parameters('trigger_resume_AS_properties_Pause_Resume_AS_parameters_Command')]"
+					},
+					"trigger_resume_synapse_properties_Pause_Resume_Synapse_parameters_Command": {
+						"value": "[parameters('trigger_resume_synapse_properties_Pause_Resume_Synapse_parameters_Command')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "pgs-adf-prd_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"trigger_suspend_AS_properties_Pause_Resume_AS_parameters_Command": {
+						"value": "[parameters('trigger_suspend_AS_properties_Pause_Resume_AS_parameters_Command')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'pgs-adf-prd_ArmTemplate_0')]"
+			]
+		},
+		{
+			"name": "pgs-adf-prd_ArmTemplate_2",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_2.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'pgs-adf-prd_ArmTemplate_1')]"
+			]
+		}
+	]
+}

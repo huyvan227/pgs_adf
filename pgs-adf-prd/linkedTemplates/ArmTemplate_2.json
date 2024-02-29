@@ -1,0 +1,2535 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "pgs-adf-prd"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE FACT CHILD')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Set variable1",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "Entity",
+							"value": {
+								"value": "@pipeline().parameters.entity",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Set variable1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@split(variables('Entity'), ',')",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "If Condition1",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@equals(pipeline().parameters.RUN_MANUAL,'1')",
+											"type": "Expression"
+										},
+										"ifFalseActivities": [
+											{
+												"name": "EXECUTE BRAVO SDE FACT CHILD AUTO",
+												"type": "ExecutePipeline",
+												"dependsOn": [],
+												"policy": {
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "BRAVO SDE FACT CHILD AUTO",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"job_script": {
+															"value": "@pipeline().parameters.job_script",
+															"type": "Expression"
+														},
+														"entity": {
+															"value": "@item()",
+															"type": "Expression"
+														},
+														"p_batch_id": {
+															"value": "@pipeline().parameters.p_batch_id",
+															"type": "Expression"
+														},
+														"p_job_group": {
+															"value": "@pipeline().parameters.p_job_group",
+															"type": "Expression"
+														},
+														"p_job_id": {
+															"value": "@pipeline().parameters.p_job_id",
+															"type": "Expression"
+														},
+														"p_order": {
+															"value": "@pipeline().parameters.p_order",
+															"type": "Expression"
+														},
+														"p_job_sub_group": {
+															"value": "@pipeline().parameters.p_job_sub_group",
+															"type": "Expression"
+														},
+														"group_name": {
+															"value": "@pipeline().parameters.group_name",
+															"type": "Expression"
+														},
+														"group_number": {
+															"value": "@pipeline().parameters.group_number",
+															"type": "Expression"
+														},
+														"target_table": {
+															"value": "@pipeline().parameters.target_table",
+															"type": "Expression"
+														},
+														"target_schema": {
+															"value": "@pipeline().parameters.target_schema",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										],
+										"ifTrueActivities": [
+											{
+												"name": "Execute Pipeline1",
+												"type": "ExecutePipeline",
+												"dependsOn": [],
+												"policy": {
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "BRAVO SDE FACT CHILD MANUAL",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"job_script": {
+															"value": "@pipeline().parameters.job_script",
+															"type": "Expression"
+														},
+														"entity": {
+															"value": "@item()",
+															"type": "Expression"
+														},
+														"p_batch_id": {
+															"value": "@pipeline().parameters.p_batch_id",
+															"type": "Expression"
+														},
+														"p_job_group": {
+															"value": "@pipeline().parameters.p_job_group",
+															"type": "Expression"
+														},
+														"p_job_id": {
+															"value": "@pipeline().parameters.p_job_id",
+															"type": "Expression"
+														},
+														"p_order": {
+															"value": "@pipeline().parameters.p_order",
+															"type": "Expression"
+														},
+														"p_job_sub_group": {
+															"value": "@pipeline().parameters.p_job_group",
+															"type": "Expression"
+														},
+														"group_name": {
+															"value": "@pipeline().parameters.group_name",
+															"type": "Expression"
+														},
+														"group_number": {
+															"value": "@pipeline().parameters.group_number",
+															"type": "Expression"
+														},
+														"target_table": {
+															"value": "@pipeline().parameters.target_table",
+															"type": "Expression"
+														},
+														"target_schema": {
+															"value": "@pipeline().parameters.target_schema",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"job_script": {
+						"type": "string"
+					},
+					"entity": {
+						"type": "string"
+					},
+					"p_batch_id": {
+						"type": "string"
+					},
+					"p_job_group": {
+						"type": "string"
+					},
+					"p_job_id": {
+						"type": "string"
+					},
+					"p_order": {
+						"type": "string"
+					},
+					"p_job_sub_group": {
+						"type": "string"
+					},
+					"group_name": {
+						"type": "string"
+					},
+					"group_number": {
+						"type": "string"
+					},
+					"target_table": {
+						"type": "string"
+					},
+					"target_schema": {
+						"type": "string"
+					},
+					"RUN_MANUAL": {
+						"type": "string",
+						"defaultValue": "0"
+					}
+				},
+				"variables": {
+					"Entity": {
+						"type": "String"
+					},
+					"aaaa": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "BRAVO"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-20T10:24:21Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LOOP ENTITY MANUAL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1_copy2",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderQuery": {
+									"value": "select  * from [DWH].[W_D_ENTITY] where [MA_DVCS] IN ('A41','B48','B49','B50','B51','A45','B53','B54','A43','B52')",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1_copy2",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1_copy2",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1_copy2').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "If Condition1_copy1",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@equals(1,1)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "BRAVO SDE FACT CHILD MANUAL",
+												"type": "ExecutePipeline",
+												"dependsOn": [],
+												"policy": {
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "BRAVO SDE FACT CHILD MANUAL TEST",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"ENTITY": {
+															"value": "@{item().Ma_Dvcs}",
+															"type": "Expression"
+														},
+														"FROM_DATE": {
+															"value": "@pipeline().parameters.FROM_DATE",
+															"type": "Expression"
+														},
+														"TO_DATE": {
+															"value": "@pipeline().parameters.TO_DATE",
+															"type": "Expression"
+														},
+														"p_batch_id": {
+															"value": "@pipeline().parameters.p_batch_id",
+															"type": "Expression"
+														},
+														"p_job_group": {
+															"value": "@pipeline().parameters.p_job_group",
+															"type": "Expression"
+														},
+														"p_job_id": {
+															"value": "@pipeline().parameters.p_job_id",
+															"type": "Expression"
+														},
+														"p_order": {
+															"value": "@pipeline().parameters.p_order",
+															"type": "Expression"
+														},
+														"p_job_sub_group": {
+															"value": "@pipeline().parameters.p_job_sub_group",
+															"type": "Expression"
+														},
+														"group_name": {
+															"value": "@pipeline().parameters.group_name",
+															"type": "Expression"
+														},
+														"group_number": {
+															"value": "@pipeline().parameters.group_number",
+															"type": "Expression"
+														},
+														"W_ACCOUNT": {
+															"value": "@pipeline().parameters.W_ACCOUNT",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ENTITY": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"FROM_DATE": {
+						"type": "string",
+						"defaultValue": "MAR 01 2023"
+					},
+					"TO_DATE": {
+						"type": "string",
+						"defaultValue": "MAR 31 2023"
+					},
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "BRV"
+					},
+					"p_job_id": {
+						"type": "string"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_sub_group": {
+						"type": "string",
+						"defaultValue": "SDE FACT"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LOOP MONTH BCPTGT')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1_copy2",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"dataset": {
+								"referenceName": "CSV",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": "fssyndev",
+									"folder": "csv",
+									"filname": "from_to_date.txt"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1_copy2",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1_copy2",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1_copy2').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "BRAVO SDE FACT BCPTGT",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"policy": {
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "BRAVO SDE FACT BCPTGT",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"ENTITY": {
+												"value": "@pipeline().parameters.ENTITY",
+												"type": "Expression"
+											},
+											"FROM_DATE": {
+												"value": "@{item().FROM_DATE}",
+												"type": "Expression"
+											},
+											"TO_DATE": {
+												"value": "@{item().TO_DATE}",
+												"type": "Expression"
+											},
+											"p_batch_id": {
+												"value": "@pipeline().parameters.p_batch_id",
+												"type": "Expression"
+											},
+											"p_job_group": {
+												"value": "@pipeline().parameters.p_job_group",
+												"type": "Expression"
+											},
+											"p_job_id": {
+												"value": "@pipeline().parameters.p_job_id",
+												"type": "Expression"
+											},
+											"p_order": {
+												"value": "@pipeline().parameters.p_order",
+												"type": "Expression"
+											},
+											"p_job_sub_group": {
+												"value": "@pipeline().parameters.p_job_sub_group",
+												"type": "Expression"
+											},
+											"group_name": {
+												"value": "@pipeline().parameters.group_name",
+												"type": "Expression"
+											},
+											"group_number": {
+												"value": "@pipeline().parameters.group_number",
+												"type": "Expression"
+											},
+											"W_ACCOUNT": {
+												"value": "@pipeline().parameters.W_ACCOUNT",
+												"type": "Expression"
+											},
+											"MONTH": {
+												"value": "@{string(int(formatDateTime(item().FROM_DATE,'MM')))}",
+												"type": "Expression"
+											},
+											"YEAR": {
+												"value": "@{formatDateTime(item().FROM_DATE,'yyyy')}",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ENTITY": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "BRV"
+					},
+					"p_job_id": {
+						"type": "string"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_sub_group": {
+						"type": "string",
+						"defaultValue": "SDE FACT"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LOOP MONTH')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1_copy2",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"dataset": {
+								"referenceName": "CSV",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": "fssyndev",
+									"folder": "csv",
+									"filname": "from_to_date.txt"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1_copy2",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1_copy2",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1_copy2').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "If Condition1_copy1",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@equals(1,1)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "BRAVO SDE FACT CHILD MANUAL",
+												"type": "ExecutePipeline",
+												"dependsOn": [],
+												"policy": {
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "BRAVO SDE FACT CHILD MANUAL TEST",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"ENTITY": {
+															"value": "@pipeline().parameters.ENTITY",
+															"type": "Expression"
+														},
+														"FROM_DATE": {
+															"value": "@{item().FROM_DATE}",
+															"type": "Expression"
+														},
+														"TO_DATE": {
+															"value": "@{item().TO_DATE}",
+															"type": "Expression"
+														},
+														"p_batch_id": {
+															"value": "@pipeline().parameters.p_batch_id",
+															"type": "Expression"
+														},
+														"p_job_group": {
+															"value": "@pipeline().parameters.p_job_group",
+															"type": "Expression"
+														},
+														"p_job_id": {
+															"value": "@pipeline().parameters.p_job_id",
+															"type": "Expression"
+														},
+														"p_order": {
+															"value": "@pipeline().parameters.p_order",
+															"type": "Expression"
+														},
+														"p_job_sub_group": {
+															"value": "@pipeline().parameters.p_job_sub_group",
+															"type": "Expression"
+														},
+														"group_name": {
+															"value": "@pipeline().parameters.group_name",
+															"type": "Expression"
+														},
+														"group_number": {
+															"value": "@pipeline().parameters.group_number",
+															"type": "Expression"
+														},
+														"W_ACCOUNT": {
+															"value": "@pipeline().parameters.W_ACCOUNT",
+															"type": "Expression"
+														},
+														"MONTH": {
+															"value": "@{string(int(formatDateTime(item().FROM_DATE,'MM')))}",
+															"type": "Expression"
+														},
+														"YEAR": {
+															"value": "@{formatDateTime(item().FROM_DATE,'yyyy')}",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ENTITY": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "BRV"
+					},
+					"p_job_id": {
+						"type": "string"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_sub_group": {
+						"type": "string",
+						"defaultValue": "SDE FACT"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					}
+				},
+				"variables": {
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/POSTGRES PIPELINE')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "EXECUTE POSTGRES SDE DIM",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "POSTGRES SDE DIM",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"p_batch_id": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "EXECUTE POSTGRES SDE FACT",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "EXECUTE POSTGRES SDE DIM",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "POSTGRES SDE FACT",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"p_batch_id": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "SIL GROUP DIM",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "EXECUTE POSTGRES SDE FACT",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "SIL GROUP",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"job_sub_group": "SIL DIM",
+								"job_id": "ALL",
+								"job_group": "PGSQL",
+								"group_number": "01",
+								"group_name": "DX01",
+								"batch_id": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "SIL GROUP FACT",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "SIL GROUP DIM",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "SIL GROUP",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"job_sub_group": "SIL FACT",
+								"job_id": "ALL",
+								"job_group": "PGSQL",
+								"group_number": "01",
+								"group_name": "DX01",
+								"batch_id": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_batch_id": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "POSTGRES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-23T07:01:39Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BAO CAO PHAN TICH GIA THANH MANUAL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1_copy2",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderQuery": {
+									"value": "select  * from [DWH].[W_D_ENTITY] where [MA_DVCS] in ('A03')--where [MA_DVCS] IN ('A41','B48','B49','B50','B51','A45','B53','B54','A43','B52')",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1_copy2",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1_copy2",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1_copy2').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "If Condition1_copy1",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@equals(1,1)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "LOOP MONTH BCPTGT",
+												"type": "ExecutePipeline",
+												"dependsOn": [],
+												"policy": {
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "LOOP MONTH BCPTGT",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"ENTITY": {
+															"value": "@{item().Ma_Dvcs}",
+															"type": "Expression"
+														},
+														"W_ACCOUNT": {
+															"value": "@pipeline().parameters.W_ACCOUNT",
+															"type": "Expression"
+														},
+														"p_batch_id": {
+															"value": "@pipeline().parameters.p_batch_id",
+															"type": "Expression"
+														},
+														"p_job_group": {
+															"value": "@pipeline().parameters.p_job_group",
+															"type": "Expression"
+														},
+														"p_job_id": {
+															"value": "@pipeline().parameters.p_job_id",
+															"type": "Expression"
+														},
+														"p_order": {
+															"value": "@pipeline().parameters.p_order",
+															"type": "Expression"
+														},
+														"p_job_sub_group": {
+															"value": "@pipeline().parameters.p_job_sub_group",
+															"type": "Expression"
+														},
+														"group_name": {
+															"value": "@pipeline().parameters.group_name",
+															"type": "Expression"
+														},
+														"group_number": {
+															"value": "@pipeline().parameters.group_number",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ENTITY": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "BRV"
+					},
+					"p_job_id": {
+						"type": "string",
+						"defaultValue": "88"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_sub_group": {
+						"type": "string",
+						"defaultValue": "SDE FACT"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/LOOP MONTH BCPTGT')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE FACT')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderStoredProcedureName": "[[ADF].[proc_etl_get_job]",
+								"storedProcedureParameters": {
+									"group_name": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_name",
+											"type": "Expression"
+										}
+									},
+									"group_number": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_number",
+											"type": "Expression"
+										}
+									},
+									"p_batch_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_batch_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_group",
+											"type": "Expression"
+										}
+									},
+									"p_job_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_sub_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_sub_group",
+											"type": "Expression"
+										}
+									},
+									"p_order": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_order",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"batchCount": 2,
+							"activities": [
+								{
+									"name": "If Condition1",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@equals(1,1)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "Execute Pipeline1",
+												"type": "ExecutePipeline",
+												"dependsOn": [],
+												"policy": {
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "BRAVO SDE FACT CHILD",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"job_script": {
+															"value": "@item().JOB_SCRIPT",
+															"type": "Expression"
+														},
+														"entity": {
+															"value": "@item().PARAM01",
+															"type": "Expression"
+														},
+														"p_batch_id": {
+															"value": "@pipeline().parameters.p_batch_id",
+															"type": "Expression"
+														},
+														"p_job_group": {
+															"value": "@pipeline().parameters.p_job_group",
+															"type": "Expression"
+														},
+														"p_job_id": {
+															"value": "@item().JOB_ID",
+															"type": "Expression"
+														},
+														"p_order": {
+															"value": "@pipeline().parameters.p_order",
+															"type": "Expression"
+														},
+														"p_job_sub_group": {
+															"value": "@pipeline().parameters.p_job_sub_group",
+															"type": "Expression"
+														},
+														"group_name": {
+															"value": "@pipeline().parameters.group_name",
+															"type": "Expression"
+														},
+														"group_number": {
+															"value": "@pipeline().parameters.group_number",
+															"type": "Expression"
+														},
+														"target_table": {
+															"value": "@item().TARGET_TABLE",
+															"type": "Expression"
+														},
+														"target_schema": {
+															"value": "@item().TARGET_SCHEMA",
+															"type": "Expression"
+														},
+														"RUN_MANUAL": {
+															"value": "@pipeline().parameters.RUN_MANUAL",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "BRV"
+					},
+					"p_job_id": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_sub_group": {
+						"type": "string",
+						"defaultValue": "SDE FACT"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "01"
+					},
+					"RUN_MANUAL": {
+						"type": "string",
+						"defaultValue": "0"
+					}
+				},
+				"variables": {
+					"script": {
+						"type": "String",
+						"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+					},
+					"Entity": {
+						"type": "Array"
+					},
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "BRAVO"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-26T11:40:11Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/BRAVO SDE FACT CHILD')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LOOP ENTITY MANUAL 2')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1_copy2",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderQuery": {
+									"value": "select  * from [DWH].[W_D_ENTITY] where [MA_DVCS] IN ('A03')",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1_copy2",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1_copy2",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1_copy2').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "If Condition1_copy1",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@equals(1,1)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "LOOP MONTH",
+												"type": "ExecutePipeline",
+												"dependsOn": [],
+												"policy": {
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "LOOP MONTH",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"ENTITY": {
+															"value": "@{item().Ma_Dvcs}",
+															"type": "Expression"
+														},
+														"W_ACCOUNT": {
+															"value": "@pipeline().parameters.W_ACCOUNT",
+															"type": "Expression"
+														},
+														"p_batch_id": {
+															"value": "@pipeline().parameters.p_batch_id",
+															"type": "Expression"
+														},
+														"p_job_group": {
+															"value": "@pipeline().parameters.p_job_group",
+															"type": "Expression"
+														},
+														"p_job_id": {
+															"value": "@pipeline().parameters.p_job_id",
+															"type": "Expression"
+														},
+														"p_order": {
+															"value": "@pipeline().parameters.p_order",
+															"type": "Expression"
+														},
+														"p_job_sub_group": {
+															"value": "@pipeline().parameters.p_job_sub_group",
+															"type": "Expression"
+														},
+														"group_name": {
+															"value": "@pipeline().parameters.group_name",
+															"type": "Expression"
+														},
+														"group_number": {
+															"value": "@pipeline().parameters.group_number",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ENTITY": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "BRV"
+					},
+					"p_job_id": {
+						"type": "string"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_sub_group": {
+						"type": "string",
+						"defaultValue": "SDE FACT"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					}
+				},
+				"variables": {
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/LOOP MONTH')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/loop entity')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1_copy2",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderQuery": {
+									"value": "select  * from [DWH].[W_D_MA_DVCS] where 1=1\r\nAND CASE WHEN '@{pipeline().parameters.ENTITY}' = 'ALL' THEN [MA_DVCS] ELSE '@{pipeline().parameters.ENTITY}' END = [MA_DVCS]",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1_copy2",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1_copy2",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1_copy2').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "If Condition1_copy1",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@equals(1,1)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "pipeline1_copy1",
+												"type": "ExecutePipeline",
+												"dependsOn": [],
+												"policy": {
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "BRAVO SDE FACT CHILD TEST",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"ENTITY": {
+															"value": "@{item().Ma_Dvcs}",
+															"type": "Expression"
+														},
+														"script": {
+															"value": "@pipeline().parameters.script",
+															"type": "Expression"
+														},
+														"TGT_TABLE": {
+															"value": "@pipeline().parameters.TARGET_TABLE",
+															"type": "Expression"
+														},
+														"W_ACCOUNT": {
+															"value": "@pipeline().parameters.W_ACCOUNT",
+															"type": "Expression"
+														},
+														"W_BATCH_ID": {
+															"value": "@pipeline().parameters.W_BATCH_ID",
+															"type": "Expression"
+														},
+														"RUN_MANUAL": {
+															"value": "@pipeline().parameters.RUN_MANUAL",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"TARGET_TABLE": {
+						"type": "string"
+					},
+					"ENTITY": {
+						"type": "string"
+					},
+					"script": {
+						"type": "string"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"W_BATCH_ID": {
+						"type": "string"
+					},
+					"RUN_MANUAL": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO PIPELINE')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "BRAVO SDE DIM",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "BRAVO SDE DIM",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"p_batch_id": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "BRAVO SDE FACT",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "BRAVO SDE DIM",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "BRAVO SDE FACT",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"p_batch_id": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "SIL_GROUP DIM",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "BRAVO SDE FACT",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "SIL GROUP",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"job_sub_group": "SIL DIM",
+								"job_id": "ALL",
+								"job_group": "BRV",
+								"group_number": "01",
+								"group_name": "DX01",
+								"batch_id": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "SIL_GROUP FACT",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "SIL_GROUP DIM",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "SIL GROUP",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"job_sub_group": "SIL FACT",
+								"job_id": "ALL",
+								"job_group": "BRV",
+								"group_number": "01",
+								"group_name": "DX01",
+								"batch_id": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_batch_id": {
+						"type": "string"
+					}
+				},
+				"variables": {
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "BRAVO"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-23T07:01:39Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/BRAVO SDE FACT')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE FACT TEST')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1_copy1",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "gs_bravo",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": "''",
+									"name": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1_copy1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1_copy1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1_copy1').output.value",
+								"type": "Expression"
+							},
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "If Condition1_copy1_copy1",
+									"type": "IfCondition",
+									"dependsOn": [
+										{
+											"activity": "start",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@equals(1,1)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "pipeline1_copy1_copy1",
+												"type": "ExecutePipeline",
+												"dependsOn": [],
+												"policy": {
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "loop entity",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"ENTITY": {
+															"value": "@if(equals(pipeline().parameters.ENTITY,null),item().W_ENTITY,pipeline().parameters.ENTITY)",
+															"type": "Expression"
+														},
+														"script": {
+															"value": "@{item().JOB_SCRIPT}",
+															"type": "Expression"
+														},
+														"W_ACCOUNT": {
+															"value": "@{item().W_ACCOUNT}",
+															"type": "Expression"
+														},
+														"W_BATCH_ID": {
+															"value": "@pipeline().parameters.p_batch_id",
+															"type": "Expression"
+														},
+														"RUN_MANUAL": {
+															"value": "@pipeline().parameters.RUN_MANUAL",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									}
+								},
+								{
+									"name": "start",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"pBATCH_ID": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"pERROR_CODE": {
+												"value": "",
+												"type": "String"
+											},
+											"pERROR_MESSAGE": {
+												"value": "",
+												"type": "String"
+											},
+											"pJOB_ID": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"pJOB_NAME": {
+												"value": "",
+												"type": "String"
+											},
+											"pLOG_MESSAGE": {
+												"value": {
+													"value": "Start load table @{item().TGT_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"pLOG_STATUS": {
+												"value": "",
+												"type": "String"
+											},
+											"pSTAGE_GROUP": {
+												"value": "",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_success",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "If Condition1_copy1_copy1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"pBATCH_ID": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"pERROR_CODE": {
+												"value": "0",
+												"type": "String"
+											},
+											"pERROR_MESSAGE": {
+												"value": "",
+												"type": "String"
+											},
+											"pJOB_ID": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"pJOB_NAME": {
+												"value": "",
+												"type": "String"
+											},
+											"pLOG_MESSAGE": {
+												"value": {
+													"value": "Finished load table @{item().TGT_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"pLOG_STATUS": {
+												"value": "END",
+												"type": "String"
+											},
+											"pSTAGE_GROUP": {
+												"value": "",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_fail",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "If Condition1_copy1_copy1",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"pBATCH_ID": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"pERROR_CODE": {
+												"value": "1",
+												"type": "String"
+											},
+											"pERROR_MESSAGE": {
+												"value": {
+													"value": "@activity('pipeline1_copy1_copy1').output.error.Message",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"pJOB_ID": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"pJOB_NAME": {
+												"value": "",
+												"type": "String"
+											},
+											"pLOG_MESSAGE": {
+												"value": {
+													"value": "Finished load table @{item().TGT_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"pLOG_STATUS": {
+												"value": "ERROR",
+												"type": "String"
+											},
+											"pSTAGE_GROUP": {
+												"value": "",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "BRAVO"
+					},
+					"p_job_id": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"ENTITY": {
+						"type": "string"
+					},
+					"p_stage_group": {
+						"type": "string",
+						"defaultValue": "SDE"
+					},
+					"RUN_MANUAL": {
+						"type": "string",
+						"defaultValue": "0"
+					}
+				},
+				"variables": {
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:11Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/loop entity')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ETL_PIPELINE')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "BRAVO PIPELINE",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "POSTGRES PIPELINE",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "BRAVO PIPELINE",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"p_batch_id": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "POSTGRES PIPELINE",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "POSTGRES PIPELINE",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"p_batch_id": {
+									"value": "@pipeline().parameters.p_batch_id",
+									"type": "Expression"
+								}
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_batch_id": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-28T08:50:24Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/BRAVO PIPELINE')]",
+				"[concat(variables('factoryId'), '/pipelines/POSTGRES PIPELINE')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/MASTER PIPELINE')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Resume_Synapse",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "Pause_Resume_Synapse",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"Command": "Resume"
+							}
+						}
+					},
+					{
+						"name": "get batch id",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "Resume_Synapse",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderStoredProcedureName": "[[ADF].[proc_etl_get_batch_id]",
+								"storedProcedureParameters": {
+									"p_batch_id": {
+										"value": null
+									},
+									"p_batch_type_id": {
+										"value": "0"
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							}
+						}
+					},
+					{
+						"name": "Set batch id",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "get batch id",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "batch_id",
+							"value": {
+								"value": "@{string(activity('get batch id').output.firstRow.BATCH_ID)}",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SEND EMAIL NOTIFICATION",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "ETL_PIPELINE",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "SEND EMAIL NOTIFICATION",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"p_batch_id": {
+									"value": "@variables('batch_id')",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "ETL_PIPELINE",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "Set batch id",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "ETL_PIPELINE",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"p_batch_id": {
+									"value": "@variables('batch_id')",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "Pause_Synapse",
+						"type": "ExecutePipeline",
+						"state": "Inactive",
+						"onInactiveMarkAs": "Succeeded",
+						"dependsOn": [
+							{
+								"activity": "SEND EMAIL NOTIFICATION",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "Pause_Resume_Synapse",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"Command": "Pause"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-28T08:50:25Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/ETL_PIPELINE')]"
+			]
+		}
+	]
+}

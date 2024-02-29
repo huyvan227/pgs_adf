@@ -1,0 +1,5300 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "pgs-adf-prd"
+		},
+		"trigger_suspend_AS_properties_Pause_Resume_AS_parameters_Command": {
+			"type": "string",
+			"defaultValue": "Suspend"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/trigger_suspend_AS')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "Pause_Resume_AS",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"Command": "[parameters('trigger_suspend_AS_properties_Pause_Resume_AS_parameters_Command')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2023-09-09T19:00:00",
+						"timeZone": "SE Asia Standard Time"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/POSTGRES SDE DIM')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup').output.value",
+								"type": "Expression"
+							},
+							"batchCount": 20,
+							"activities": [
+								{
+									"name": "start",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Start load table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_success",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Finished load table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "END",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_fail",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": {
+													"value": "@activity('Copy data').output.errors[0].Message\r\n",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Load failed table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "ERROR",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Copy data",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "start",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzurePostgreSqlSource",
+											"additionalColumns": [
+												{
+													"name": "W_BATCH_ID",
+													"value": {
+														"value": "@pipeline().parameters.p_batch_id",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_INSERT_DT",
+													"value": {
+														"value": "@addhours(utcnow(),7)",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_DATASOURCE_NAME",
+													"value": {
+														"value": "@pipeline().parameters.p_job_group",
+														"type": "Expression"
+													}
+												}
+											],
+											"query": {
+												"value": "@item().JOB_SCRIPT",
+												"type": "Expression"
+											},
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "SqlDWSink",
+											"preCopyScript": {
+												"value": "DELETE @{item().TARGET_SCHEMA}.@{item().TARGET_TABLE} WHERE W_BATCH_ID <> '@{pipeline().parameters.p_batch_id}'\n",
+												"type": "Expression"
+											},
+											"writeBehavior": "Insert",
+											"sqlWriterUseTableLock": false,
+											"tableOption": "autoCreate",
+											"disableMetricsCollection": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "POSTGRES",
+											"type": "DatasetReference",
+											"parameters": {
+												"SCHEMA": "''",
+												"TABLE_NAME": "''"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "PGSWH",
+											"type": "DatasetReference",
+											"parameters": {
+												"Schema": {
+													"value": "@item().TARGET_SCHEMA",
+													"type": "Expression"
+												},
+												"Table": {
+													"value": "@item().TARGET_TABLE",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"name": "Lookup",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderStoredProcedureName": "[[ADF].[proc_etl_get_job]",
+								"storedProcedureParameters": {
+									"group_name": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_name",
+											"type": "Expression"
+										}
+									},
+									"group_number": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_number",
+											"type": "Expression"
+										}
+									},
+									"p_batch_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_batch_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_group",
+											"type": "Expression"
+										}
+									},
+									"p_job_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_sub_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_sub_group",
+											"type": "Expression"
+										}
+									},
+									"p_order": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_order",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "PGSQL"
+					},
+					"p_job_id": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"p_job_sub_group": {
+						"type": "string",
+						"defaultValue": "SDE DIM"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					}
+				},
+				"folder": {
+					"name": "POSTGRES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-26T11:40:11Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/POSTGRES SDE FACT')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup').output.value",
+								"type": "Expression"
+							},
+							"batchCount": 30,
+							"activities": [
+								{
+									"name": "start",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Start load table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_success",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Finished load table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "END",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_fail",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": {
+													"value": "@activity('Copy data').output.errors[0].Message\n",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Load failed table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "ERROR",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Copy data",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "start",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzurePostgreSqlSource",
+											"additionalColumns": [
+												{
+													"name": "W_BATCH_ID",
+													"value": {
+														"value": "@pipeline().parameters.p_batch_id",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_INSERT_DT",
+													"value": {
+														"value": "@addhours(utcnow(),7)",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_DATASOURCE_NAME",
+													"value": {
+														"value": "@pipeline().parameters.p_job_group",
+														"type": "Expression"
+													}
+												}
+											],
+											"query": {
+												"value": "@item().JOB_SCRIPT",
+												"type": "Expression"
+											},
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "SqlDWSink",
+											"preCopyScript": {
+												"value": "DELETE @{item().TARGET_SCHEMA}.@{item().TARGET_TABLE} WHERE W_BATCH_ID <> '@{pipeline().parameters.p_batch_id}'\n",
+												"type": "Expression"
+											},
+											"writeBehavior": "Insert",
+											"sqlWriterUseTableLock": false,
+											"tableOption": "autoCreate",
+											"disableMetricsCollection": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "POSTGRES",
+											"type": "DatasetReference",
+											"parameters": {
+												"SCHEMA": "''",
+												"TABLE_NAME": "''"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "PGSWH",
+											"type": "DatasetReference",
+											"parameters": {
+												"Schema": {
+													"value": "@item().TARGET_SCHEMA",
+													"type": "Expression"
+												},
+												"Table": {
+													"value": "@item().TARGET_TABLE",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"name": "Lookup",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderStoredProcedureName": "[[ADF].[proc_etl_get_job]",
+								"storedProcedureParameters": {
+									"group_name": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_name",
+											"type": "Expression"
+										}
+									},
+									"group_number": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_number",
+											"type": "Expression"
+										}
+									},
+									"p_batch_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_batch_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_group",
+											"type": "Expression"
+										}
+									},
+									"p_job_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_sub_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_sub_group",
+											"type": "Expression"
+										}
+									},
+									"p_order": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_order",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_batch_id": {
+						"type": "string"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "PGSQL"
+					},
+					"p_job_id": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"p_job_sub_group": {
+						"type": "string",
+						"defaultValue": "SDE FACT"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					}
+				},
+				"folder": {
+					"name": "POSTGRES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-26T11:40:11Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SIL PIPELINE')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach1_copy1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup').output.value",
+								"type": "Expression"
+							},
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "If Condition1_copy1_copy1",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@equals(1,1)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "Stored procedure1",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "start",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@item().JOB_SCRIPT",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"p_batch_id": {
+															"value": {
+																"value": "@pipeline().parameters.p_batch_id",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "PGSWH",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "start",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+													"storedProcedureParameters": {
+														"p_batch_id": {
+															"value": {
+																"value": "@pipeline().parameters.p_batch_id",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_error_code": {
+															"value": "",
+															"type": "String"
+														},
+														"p_error_message": {
+															"value": "",
+															"type": "String"
+														},
+														"p_job_id": {
+															"value": {
+																"value": "@item().JOB_ID",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_log_message": {
+															"value": {
+																"value": "Start load table @{item().TARGET_TABLE}",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"p_log_status": {
+															"value": "",
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "PGSWH",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "end_fail",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Stored procedure1",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+													"storedProcedureParameters": {
+														"p_batch_id": {
+															"value": {
+																"value": "@pipeline().parameters.p_batch_id",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_error_code": {
+															"value": "",
+															"type": "String"
+														},
+														"p_error_message": {
+															"value": "",
+															"type": "String"
+														},
+														"p_job_id": {
+															"value": {
+																"value": "@item().JOB_ID",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_log_message": {
+															"value": {
+																"value": "Load failed table @{item().TARGET_TABLE}",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"p_log_status": {
+															"value": "ERROR",
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "PGSWH",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "end_success",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Stored procedure1",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+													"storedProcedureParameters": {
+														"p_batch_id": {
+															"value": {
+																"value": "@pipeline().parameters.p_batch_id",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_error_code": {
+															"value": "",
+															"type": "String"
+														},
+														"p_error_message": {
+															"value": "",
+															"type": "String"
+														},
+														"p_job_id": {
+															"value": {
+																"value": "@item().JOB_ID",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_log_message": {
+															"value": {
+																"value": "Finished load table @{item().TARGET_TABLE}",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"p_log_status": {
+															"value": "END",
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "PGSWH",
+													"type": "LinkedServiceReference"
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Lookup",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderStoredProcedureName": "[[ADF].[proc_etl_get_job]",
+								"storedProcedureParameters": {
+									"group_name": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_name",
+											"type": "Expression"
+										}
+									},
+									"group_number": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_number",
+											"type": "Expression"
+										}
+									},
+									"p_batch_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_batch_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_group",
+											"type": "Expression"
+										}
+									},
+									"p_job_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_sub_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_sub_group",
+											"type": "Expression"
+										}
+									},
+									"p_order": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_order",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string"
+					},
+					"p_job_id": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"p_job_sub_group": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-23T07:01:38Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TEST_POSTGRES')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy data1",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzurePostgreSqlSource",
+								"additionalColumns": [
+									{
+										"name": "W_BATCH_ID",
+										"value": "1"
+									},
+									{
+										"name": "W_INSERT_DT",
+										"value": {
+											"value": "@addhours(utcnow(),7)",
+											"type": "Expression"
+										}
+									},
+									{
+										"name": "W_DATASOURCE_NAME",
+										"value": "PGSQL"
+									}
+								],
+								"query": "SELECT * FROM public.\"DN_DANH_MUC_KHACH_HANG_MA_TRAM\" where 1=1",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "SqlDWSink",
+								"writeBehavior": "Insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "POSTGRES",
+								"type": "DatasetReference",
+								"parameters": {
+									"SCHEMA": "''",
+									"TABLE_NAME": "''"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "STG",
+									"Table": "W_DS_PGSQL_DN_DANH_MUC_KHACH_HANG_MA_TRAM"
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "POSTGRES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-12-12T10:58:04Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy data1",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "ExcelSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								}
+							},
+							"sink": {
+								"type": "SqlDWSink",
+								"writeBehavior": "Insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "EXCEL",
+								"type": "DatasetReference",
+								"parameters": {
+									"filename": "Book5.xlsx",
+									"sheetname": "Sheet1"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "DWH",
+									"Table": "W_M_PRODUCTCATEGORYCODE"
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-23T07:01:38Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline4')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderStoredProcedureName": "[[ADF].[proc_etl_get_batch_id]",
+								"storedProcedureParameters": {
+									"p_batch_id": {
+										"type": "String",
+										"value": null
+									},
+									"p_batch_type_id": {
+										"type": "Int32",
+										"value": "0"
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_batch_id": {
+						"type": "string"
+					},
+					"p_batch_type_id": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-23T07:01:38Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/gs_bravo')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BRAVO_DEV",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"schema": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().schema",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().name",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE DIM')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach1_copy1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "If Condition1_copy1_copy1",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@equals(1,1)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "Copy data",
+												"type": "Copy",
+												"dependsOn": [
+													{
+														"activity": "start",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "SqlServerSource",
+														"additionalColumns": [
+															{
+																"name": "W_BATCH_ID",
+																"value": {
+																	"value": "@pipeline().parameters.p_batch_id",
+																	"type": "Expression"
+																}
+															},
+															{
+																"name": "W_INSERT_DT",
+																"value": {
+																	"value": "@addhours(utcnow(),7)",
+																	"type": "Expression"
+																}
+															},
+															{
+																"name": "W_DATASOURCE_NAME",
+																"value": "BRV"
+															}
+														],
+														"sqlReaderQuery": {
+															"value": "@item().JOB_SCRIPT",
+															"type": "Expression"
+														},
+														"queryTimeout": "02:00:00",
+														"partitionOption": "None"
+													},
+													"sink": {
+														"type": "SqlDWSink",
+														"preCopyScript": {
+															"value": "IF OBJECT_ID('@{item().TARGET_SCHEMA}.@{item().TARGET_TABLE}') IS NOT NULL\n    TRUNCATE TABLE @{item().TARGET_SCHEMA}.@{item().TARGET_TABLE}",
+															"type": "Expression"
+														},
+														"writeBehavior": "Insert",
+														"sqlWriterUseTableLock": false,
+														"tableOption": "autoCreate",
+														"disableMetricsCollection": false
+													},
+													"enableStaging": false,
+													"translator": {
+														"type": "TabularTranslator",
+														"typeConversion": true,
+														"typeConversionSettings": {
+															"allowDataTruncation": true,
+															"treatBooleanAsNumber": false
+														}
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "gs_bravo",
+														"type": "DatasetReference",
+														"parameters": {
+															"schema": "''",
+															"name": "''"
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "PGSWH",
+														"type": "DatasetReference",
+														"parameters": {
+															"Schema": {
+																"value": "@item().TARGET_SCHEMA",
+																"type": "Expression"
+															},
+															"Table": {
+																"value": "@item().TARGET_TABLE",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"name": "start",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+													"storedProcedureParameters": {
+														"p_batch_id": {
+															"value": {
+																"value": "@pipeline().parameters.p_batch_id",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_error_code": {
+															"value": "",
+															"type": "String"
+														},
+														"p_error_message": {
+															"value": "",
+															"type": "String"
+														},
+														"p_job_id": {
+															"value": {
+																"value": "@item().JOB_ID",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_log_message": {
+															"value": {
+																"value": "Start load table @{item().TARGET_TABLE}",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"p_log_status": {
+															"value": "",
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "PGSWH",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "end_success",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Copy data",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+													"storedProcedureParameters": {
+														"p_batch_id": {
+															"value": {
+																"value": "@pipeline().parameters.p_batch_id",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_error_code": {
+															"value": "",
+															"type": "String"
+														},
+														"p_error_message": {
+															"value": "",
+															"type": "String"
+														},
+														"p_job_id": {
+															"value": {
+																"value": "@item().JOB_ID",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_log_message": {
+															"value": {
+																"value": "Finished load table @{item().TARGET_TABLE}",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"p_log_status": {
+															"value": "END",
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "PGSWH",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "end_fail",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Copy data",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+													"storedProcedureParameters": {
+														"p_batch_id": {
+															"value": {
+																"value": "@pipeline().parameters.p_batch_id",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_error_code": {
+															"value": "",
+															"type": "String"
+														},
+														"p_error_message": {
+															"value": "",
+															"type": "String"
+														},
+														"p_job_id": {
+															"value": {
+																"value": "@item().JOB_ID",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"p_log_message": {
+															"value": {
+																"value": "Finished load table @{item().TARGET_TABLE}",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"p_log_status": {
+															"value": "ERROR",
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "PGSWH",
+													"type": "LinkedServiceReference"
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Lookup1",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderStoredProcedureName": "[[ADF].[proc_etl_get_job]",
+								"storedProcedureParameters": {
+									"group_name": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_name",
+											"type": "Expression"
+										}
+									},
+									"group_number": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_number",
+											"type": "Expression"
+										}
+									},
+									"p_batch_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_batch_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_group",
+											"type": "Expression"
+										}
+									},
+									"p_job_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_sub_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_sub_group",
+											"type": "Expression"
+										}
+									},
+									"p_order": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_order",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "BRV"
+					},
+					"p_job_id": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"ENTITY": {
+						"type": "string"
+					},
+					"p_job_sub_group": {
+						"type": "string",
+						"defaultValue": "SDE DIM"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					}
+				},
+				"folder": {
+					"name": "BRAVO"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-20T07:51:27Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/gs_bravo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE FACT BCPTGT')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "Delete1",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderStoredProcedureName": "[[ADF].[proc_etl_get_job]",
+								"storedProcedureParameters": {
+									"group_name": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_name",
+											"type": "Expression"
+										}
+									},
+									"group_number": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_number",
+											"type": "Expression"
+										}
+									},
+									"p_batch_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_batch_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_group",
+											"type": "Expression"
+										}
+									},
+									"p_job_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_sub_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_sub_group",
+											"type": "Expression"
+										}
+									},
+									"p_order": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_order",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1').output.value",
+								"type": "Expression"
+							},
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "Copy data1_copy1",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "Copy CSV",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"wildcardFolderPath": "csv/now",
+												"wildcardFileName": "bcgtsp*",
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "SqlDWSink",
+											"preCopyScript": {
+												"value": "DELETE @{item().TARGET_SCHEMA}.@{item().TARGET_TABLE} WHERE Prop_10 <> '@{pipeline().parameters.p_batch_id}'\n",
+												"type": "Expression"
+											},
+											"writeBehavior": "Insert",
+											"sqlWriterUseTableLock": false,
+											"tableOption": "autoCreate",
+											"disableMetricsCollection": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "CSV_GT",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": "fssyndev",
+												"folder": "''",
+												"filname": "''"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "PGSWH",
+											"type": "DatasetReference",
+											"parameters": {
+												"Schema": {
+													"value": "@item().TARGET_SCHEMA",
+													"type": "Expression"
+												},
+												"Table": {
+													"value": "@item().TARGET_TABLE",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "start",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Start load table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_success",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data1_copy1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Finished load table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "END",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_fail",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data1_copy1",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Finished load table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "ERROR",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Copy CSV",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "start",
+											"dependencyConditions": [
+												"Completed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "SqlServerSource",
+											"additionalColumns": [
+												{
+													"name": "Entity",
+													"value": {
+														"value": "@{pipeline().parameters.ENTITY}",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "Doc_date1",
+													"value": {
+														"value": "@pipeline().parameters.FROM_DATE",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "Doc_date2",
+													"value": {
+														"value": "@pipeline().parameters.TO_DATE",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_BATCH_ID",
+													"value": {
+														"value": "@pipeline().parameters.p_batch_id",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_INSERT_DATE",
+													"value": {
+														"value": "@addhours(utcnow(),7)",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_DATASOURCE_NAME",
+													"value": {
+														"value": "@pipeline().parameters.p_job_group",
+														"type": "Expression"
+													}
+												}
+											],
+											"sqlReaderQuery": {
+												"value": "@replace(replace(replace(replace(replace(item().JOB_SCRIPT,'{param_2}',pipeline().parameters.TO_DATE),'{param_3}',pipeline().parameters.ENTITY),'{param_1}',pipeline().parameters.FROM_DATE),'{param_4}',pipeline().parameters.MONTH),'{param_5}',pipeline().parameters.YEAR)",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "gs_bravo",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema": "''",
+												"name": "''"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "CSV_GT",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": "fssyndev",
+												"folder": "csv/now",
+												"filname": {
+													"value": "bcgtsp@{pipeline().parameters.ENTITY}_@{pipeline().parameters.MONTH}_@{pipeline().parameters.YEAR}.csv",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"name": "Delete1",
+						"type": "Delete",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "CSV",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": "fssyndev",
+									"folder": "csv/now",
+									"filname": "''"
+								}
+							},
+							"enableLogging": false,
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"wildcardFileName": "bcgtsp*",
+								"enablePartitionDiscovery": false
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ENTITY": {
+						"type": "string",
+						"defaultValue": "A00"
+					},
+					"FROM_DATE": {
+						"type": "string",
+						"defaultValue": "jan 01 2023"
+					},
+					"TO_DATE": {
+						"type": "string",
+						"defaultValue": "jan 31 2023"
+					},
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "BRV"
+					},
+					"p_job_id": {
+						"type": "string"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_sub_group": {
+						"type": "string",
+						"defaultValue": "SDE FACT"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"MONTH": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"YEAR": {
+						"type": "string",
+						"defaultValue": "2023"
+					}
+				},
+				"variables": {
+					"script": {
+						"type": "String",
+						"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/gs_bravo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE FACT CHILD AUTO TEST')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": "select\nconvert(varchar(8),dateadd(day,1,eomonth(dateadd(hour,7,GETDATE()),-1)),112) FROM_DATE,\nconvert(varchar(8),eomonth(dateadd(hour,7,GETDATE())),112) TO_DATE,\nMONTHNAME(CURRENT_DATE()) CURRENT_dt\n",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "gs_bravo",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": "''",
+									"name": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1').output.value",
+								"type": "Expression"
+							},
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "Copy data1_copy1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "SqlServerSource",
+											"additionalColumns": [
+												{
+													"name": "Entity",
+													"value": {
+														"value": "@{pipeline().parameters.ENTITY}",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_BATCH_ID",
+													"value": {
+														"value": "@pipeline().parameters.W_BATCH_ID",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_INSERT_DATE",
+													"value": {
+														"value": "@addhours(utcnow(),7)",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_DATASOURCE_NAME",
+													"value": "BRAVO"
+												},
+												{
+													"name": "Doc_date1",
+													"value": {
+														"value": "@item().FROM_DATE",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "Doc_date2",
+													"value": {
+														"value": "@item().TO_DATE",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_ACCOUNT",
+													"value": {
+														"value": "@pipeline().parameters.W_ACCOUNT",
+														"type": "Expression"
+													}
+												}
+											],
+											"sqlReaderQuery": {
+												"value": "@replace(replace(replace(pipeline().parameters.script,'{param_2}',item().TO_DATE),'{param_3}',pipeline().parameters.ENTITY),'{param_1}',item().FROM_DATE)",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "SqlDWSink",
+											"writeBehavior": "Insert",
+											"sqlWriterUseTableLock": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "gs_bravo",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema": "''",
+												"name": "''"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "PGSWH",
+											"type": "DatasetReference",
+											"parameters": {
+												"Schema": "''",
+												"Table": "''"
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ENTITY": {
+						"type": "string",
+						"defaultValue": "A01"
+					},
+					"script": {
+						"type": "string",
+						"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+					},
+					"TGT_TABLE": {
+						"type": "string",
+						"defaultValue": "[[STG].[W_BRAVO_CONSO_GL_FOR_DA_FS]"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"W_BATCH_ID": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"RUN_MANUAL": {
+						"type": "int",
+						"defaultValue": 0
+					}
+				},
+				"variables": {
+					"script": {
+						"type": "String",
+						"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/gs_bravo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE FACT CHILD AUTO')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1_copy2",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderQuery": {
+									"value": "if  day(dateadd(hour,7,getdate())) >= @{pipeline().parameters.FROM_DATE_PREVIOUS_MONTH} and day(dateadd(hour,7,getdate())) <= @{pipeline().parameters.TO_DATE_PREVIOUS_MONTH}\nbegin \nselect\ncast(FORMAT(dateadd(day,1,eomonth(dateadd(hour,7,GETDATE()),-1)), 'MMM dd yyyy') as nvarchar(12)) FROM_DATE,\ncast(FORMAT(eomonth(dateadd(hour,7,GETDATE())), 'MMM dd yyyy') as nvarchar(12)) TO_DATE,\ncast(FORMAT(dateadd(hour,7,GETDATE()), 'MMM dd yyyy') as nvarchar(12)) [CURRENT_DATE],\ncast(FORMAT(dateadd(hour,7,GETDATE()), 'yyyy') as nvarchar(12)) [YEAR],\ncast(cast(FORMAT(dateadd(hour,7,GETDATE()), 'MM') as int) as nvarchar(12)) [MONTH]\n\nunion all\nselect\ncast(FORMAT(dateadd(day,1,eomonth(dateadd(hour,7,GETDATE()),-2)), 'MMM dd yyyy') as nvarchar(12)) FROM_DATE,\ncast(FORMAT(eomonth(dateadd(hour,7,GETDATE()),-1), 'MMM dd yyyy') as nvarchar(12)) TO_DATE,\ncast(FORMAT(eomonth(dateadd(hour,7,GETDATE()),-1), 'MMM dd yyyy') as nvarchar(12)) [CURRENT_DATE],\ncast(FORMAT(eomonth(dateadd(hour,7,GETDATE()),-1), 'yyyy') as nvarchar(12)) [YEAR],\ncast(cast(FORMAT(eomonth(dateadd(hour,7,GETDATE()),-1), 'MM') as int )as nvarchar(12)) [MONTH]\n\nend\nelse\nbegin\nselect\ncast(FORMAT(dateadd(day,1,eomonth(dateadd(hour,7,GETDATE()),-1)), 'MMM dd yyyy') as nvarchar(12)) FROM_DATE,\ncast(FORMAT(eomonth(dateadd(hour,7,GETDATE())), 'MMM dd yyyy') as nvarchar(12)) TO_DATE,\ncast(FORMAT(dateadd(hour,7,GETDATE()), 'MMM dd yyyy') as nvarchar(12)) [CURRENT_DATE],\ncast(FORMAT(dateadd(hour,7,GETDATE()), 'yyyy') as nvarchar(12)) [YEAR],\ncast(cast(FORMAT(dateadd(hour,7,GETDATE()), 'MM') as int) as nvarchar(12)) [MONTH]\nend",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1_copy2",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1_copy2",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1_copy2').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"batchCount": 2,
+							"activities": [
+								{
+									"name": "Copy data1",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "start",
+											"dependencyConditions": [
+												"Completed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "SqlServerSource",
+											"additionalColumns": [
+												{
+													"name": "Entity",
+													"value": {
+														"value": "@pipeline().parameters.entity",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "Doc_date1",
+													"value": {
+														"value": "@item().FROM_DATE",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "Doc_date2",
+													"value": {
+														"value": "@item().TO_DATE",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_BATCH_ID",
+													"value": {
+														"value": "@pipeline().parameters.p_batch_id",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_INSERT_DATE",
+													"value": {
+														"value": "@addhours(utcnow(),7)",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_DATASOURCE_NAME",
+													"value": {
+														"value": "@pipeline().parameters.p_job_group",
+														"type": "Expression"
+													}
+												}
+											],
+											"sqlReaderQuery": {
+												"value": "@replace(replace(replace(replace(replace(replace(pipeline().parameters.job_script,'{param_1}',item().FROM_DATE),'{param_2}',item().TO_DATE),'{param_3}',pipeline().parameters.entity),'{param_6}',item().CURRENT_DATE),'{param_4}',item().MONTH),'{param_5}',item().YEAR)",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "SqlDWSink",
+											"preCopyScript": {
+												"value": "DELETE @{pipeline().parameters.target_schema}.@{pipeline().parameters.target_table} WHERE W_BATCH_ID <> '@{pipeline().parameters.p_batch_id}'\n",
+												"type": "Expression"
+											},
+											"writeBehavior": "Insert",
+											"sqlWriterUseTableLock": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "gs_bravo",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema": "''",
+												"name": "''"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "PGSWH",
+											"type": "DatasetReference",
+											"parameters": {
+												"Schema": {
+													"value": "@pipeline().parameters.target_schema",
+													"type": "Expression"
+												},
+												"Table": {
+													"value": "@pipeline().parameters.target_table",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "start",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_job_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Start load table @{pipeline().parameters.target_table}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_success",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_job_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Finished load table @{pipeline().parameters.target_table}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "END",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_fail",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data1",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": {
+													"value": "@activity('Copy data1').output.errors[0].Message",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_job_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Load failed table @{pipeline().parameters.target_table}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "ERROR",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"job_script": {
+						"type": "string"
+					},
+					"entity": {
+						"type": "string"
+					},
+					"p_batch_id": {
+						"type": "string"
+					},
+					"p_job_group": {
+						"type": "string"
+					},
+					"p_job_id": {
+						"type": "string"
+					},
+					"p_order": {
+						"type": "string"
+					},
+					"p_job_sub_group": {
+						"type": "string"
+					},
+					"group_name": {
+						"type": "string"
+					},
+					"group_number": {
+						"type": "string"
+					},
+					"target_table": {
+						"type": "string"
+					},
+					"target_schema": {
+						"type": "string"
+					},
+					"FROM_DATE_PREVIOUS_MONTH": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"TO_DATE_PREVIOUS_MONTH": {
+						"type": "string",
+						"defaultValue": "27"
+					}
+				},
+				"variables": {
+					"aaaa": {
+						"type": "String"
+					},
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "BRAVO"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-28T08:50:24Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/gs_bravo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE FACT CHILD AUTO2')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderQuery": {
+									"value": "if  day(dateadd(hour,7,getdate())) >= @{pipeline().parameters.FROM_DATE_PREVIOUS_MONTH} and day(dateadd(hour,7,getdate())) <= @{pipeline().parameters.TO_DATE_PREVIOUS_MONTH}\nbegin \nselect\ncast(FORMAT(dateadd(day,1,eomonth(dateadd(hour,7,GETDATE()),-1)), 'MMM dd yyyy') as nvarchar(12)) FROM_DATE,\ncast(FORMAT(eomonth(dateadd(hour,7,GETDATE())), 'MMM dd yyyy') as nvarchar(12)) TO_DATE\n\nunion all\nselect\ncast(FORMAT(dateadd(day,1,eomonth(dateadd(hour,7,GETDATE()),-2)), 'MMM dd yyyy') as nvarchar(12)) FROM_DATE,\ncast(FORMAT(eomonth(dateadd(hour,7,GETDATE()),-1), 'MMM dd yyyy') as nvarchar(12)) TO_DATE\n\nend\nelse\nbegin\nselect\ncast(FORMAT(dateadd(day,1,eomonth(dateadd(hour,7,GETDATE()),-1)), 'MMM dd yyyy') as nvarchar(12)) FROM_DATE,\ncast(FORMAT(eomonth(dateadd(hour,7,GETDATE())), 'MMM dd yyyy') as nvarchar(12)) TO_DATE\nend",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1').output.value",
+								"type": "Expression"
+							},
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "Copy data1_copy1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "SqlServerSource",
+											"additionalColumns": [
+												{
+													"name": "Entity",
+													"value": {
+														"value": "@{pipeline().parameters.ENTITY}",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_BATCH_ID",
+													"value": {
+														"value": "@pipeline().parameters.W_BATCH_ID",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_INSERT_DATE",
+													"value": {
+														"value": "@addhours(utcnow(),7)",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_DATASOURCE_NAME",
+													"value": "BRAVO"
+												},
+												{
+													"name": "Doc_date1",
+													"value": {
+														"value": "@item().FROM_DATE",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "Doc_date2",
+													"value": {
+														"value": "@item().TO_DATE",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_ACCOUNT",
+													"value": {
+														"value": "@pipeline().parameters.W_ACCOUNT",
+														"type": "Expression"
+													}
+												}
+											],
+											"sqlReaderQuery": {
+												"value": "@replace(replace(replace(pipeline().parameters.script,'{param_2}',item().TO_DATE),'{param_3}',pipeline().parameters.ENTITY),'{param_1}',item().FROM_DATE)",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "SqlDWSink",
+											"writeBehavior": "Insert",
+											"sqlWriterUseTableLock": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "gs_bravo",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema": "''",
+												"name": "''"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "PGSWH",
+											"type": "DatasetReference",
+											"parameters": {
+												"Schema": "''",
+												"Table": "''"
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ENTITY": {
+						"type": "string",
+						"defaultValue": "A01"
+					},
+					"script": {
+						"type": "string",
+						"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+					},
+					"TGT_TABLE": {
+						"type": "string",
+						"defaultValue": "[[STG].[W_BRAVO_CONSO_GL_FOR_DA_FS]"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"W_BATCH_ID": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"DB": {
+						"type": "string"
+					},
+					"RUN_MANUAL": {
+						"type": "int",
+						"defaultValue": 0
+					},
+					"FROM_DATE_PREVIOUS_MONTH": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"TO_DATE_PREVIOUS_MONTH": {
+						"type": "string",
+						"defaultValue": "19"
+					}
+				},
+				"variables": {
+					"script": {
+						"type": "String",
+						"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+					},
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/gs_bravo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE FACT CHILD MANUAL TEST')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderStoredProcedureName": "[[ADF].[proc_etl_get_job]",
+								"storedProcedureParameters": {
+									"group_name": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_name",
+											"type": "Expression"
+										}
+									},
+									"group_number": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.group_number",
+											"type": "Expression"
+										}
+									},
+									"p_batch_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_batch_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_group",
+											"type": "Expression"
+										}
+									},
+									"p_job_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_id",
+											"type": "Expression"
+										}
+									},
+									"p_job_sub_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_job_sub_group",
+											"type": "Expression"
+										}
+									},
+									"p_order": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.p_order",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1').output.value",
+								"type": "Expression"
+							},
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "Copy data1_copy1",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "start",
+											"dependencyConditions": [
+												"Completed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "SqlServerSource",
+											"additionalColumns": [
+												{
+													"name": "Entity",
+													"value": {
+														"value": "@{pipeline().parameters.ENTITY}",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_BATCH_ID",
+													"value": {
+														"value": "@pipeline().parameters.p_batch_id",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_INSERT_DATE",
+													"value": {
+														"value": "@addhours(utcnow(),7)",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_DATASOURCE_NAME",
+													"value": {
+														"value": "@pipeline().parameters.p_job_group",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "Doc_date1",
+													"value": {
+														"value": "@pipeline().parameters.FROM_DATE",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "Doc_date2",
+													"value": {
+														"value": "@pipeline().parameters.TO_DATE",
+														"type": "Expression"
+													}
+												}
+											],
+											"sqlReaderQuery": {
+												"value": "@replace(replace(replace(replace(replace(item().JOB_SCRIPT,'{param_2}',pipeline().parameters.TO_DATE),'{param_3}',pipeline().parameters.ENTITY),'{param_1}',pipeline().parameters.FROM_DATE),'{param_4}',pipeline().parameters.MONTH),'{param_5}',pipeline().parameters.YEAR)",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "SqlDWSink",
+											"preCopyScript": {
+												"value": "DELETE @{item().TARGET_SCHEMA}.@{item().TARGET_TABLE} WHERE W_BATCH_ID <> '@{pipeline().parameters.p_batch_id}'",
+												"type": "Expression"
+											},
+											"writeBehavior": "Insert",
+											"sqlWriterUseTableLock": false,
+											"disableMetricsCollection": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "gs_bravo",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema": "''",
+												"name": "''"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "PGSWH",
+											"type": "DatasetReference",
+											"parameters": {
+												"Schema": {
+													"value": "@item().TARGET_SCHEMA",
+													"type": "Expression"
+												},
+												"Table": {
+													"value": "@item().TARGET_TABLE",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "start",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Start load table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_success",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data1_copy1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Finished load table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "END",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_fail",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data1_copy1",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@item().JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Finished load table @{item().TARGET_TABLE}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "ERROR",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ENTITY": {
+						"type": "string",
+						"defaultValue": "A00"
+					},
+					"FROM_DATE": {
+						"type": "string"
+					},
+					"TO_DATE": {
+						"type": "string"
+					},
+					"p_batch_id": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_group": {
+						"type": "string",
+						"defaultValue": "BRV"
+					},
+					"p_job_id": {
+						"type": "string"
+					},
+					"p_order": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"p_job_sub_group": {
+						"type": "string",
+						"defaultValue": "SDE FACT"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"MONTH": {
+						"type": "string"
+					},
+					"YEAR": {
+						"type": "string"
+					}
+				},
+				"variables": {
+					"script": {
+						"type": "String",
+						"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+					},
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/gs_bravo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE FACT CHILD MANUAL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1_copy2",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"dataset": {
+								"referenceName": "CSV",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": "fssyndev",
+									"folder": "csv",
+									"filname": "from_to_date.txt"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1_copy2",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1_copy2",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1_copy2').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "Copy data1",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "start",
+											"dependencyConditions": [
+												"Completed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "SqlServerSource",
+											"additionalColumns": [
+												{
+													"name": "Entity",
+													"value": {
+														"value": "@pipeline().parameters.entity",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "Doc_date1",
+													"value": {
+														"value": "@item().FROM_DATE",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "Doc_date2",
+													"value": {
+														"value": "@item().TO_DATE",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_BATCH_ID",
+													"value": {
+														"value": "@pipeline().parameters.p_batch_id",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_INSERT_DATE",
+													"value": {
+														"value": "@addhours(utcnow(),7)",
+														"type": "Expression"
+													}
+												},
+												{
+													"name": "W_DATASOURCE_NAME",
+													"value": {
+														"value": "@pipeline().parameters.p_job_group",
+														"type": "Expression"
+													}
+												}
+											],
+											"sqlReaderQuery": {
+												"value": "@replace(replace(replace(pipeline().parameters.job_script,'{param_1}',item().FROM_DATE),'{param_2}',item().TO_DATE),'{param_3}',pipeline().parameters.entity)",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "SqlDWSink",
+											"preCopyScript": {
+												"value": "DELETE @{pipeline().parameters.target_schema}.@{pipeline().parameters.target_table} WHERE W_BATCH_ID <> '@{pipeline().parameters.p_batch_id}'\n",
+												"type": "Expression"
+											},
+											"writeBehavior": "Insert",
+											"sqlWriterUseTableLock": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "gs_bravo",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema": "''",
+												"name": "''"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "PGSWH",
+											"type": "DatasetReference",
+											"parameters": {
+												"Schema": {
+													"value": "@pipeline().parameters.target_schema",
+													"type": "Expression"
+												},
+												"Table": {
+													"value": "@pipeline().parameters.target_table",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "start",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_job_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Start load table @{pipeline().parameters.target_table}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_success",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_job_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Finished load table @{pipeline().parameters.target_table}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "END",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "end_fail",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "Copy data1",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_batch_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": {
+													"value": "@activity('Copy data1').output.errors[0].Message",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@pipeline().parameters.p_job_id",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": {
+													"value": "Load failed table @{pipeline().parameters.target_table}",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "ERROR",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"job_script": {
+						"type": "string"
+					},
+					"entity": {
+						"type": "string"
+					},
+					"p_batch_id": {
+						"type": "string"
+					},
+					"p_job_group": {
+						"type": "string"
+					},
+					"p_job_id": {
+						"type": "string"
+					},
+					"p_order": {
+						"type": "string"
+					},
+					"p_job_sub_group": {
+						"type": "string"
+					},
+					"group_name": {
+						"type": "string"
+					},
+					"group_number": {
+						"type": "string"
+					},
+					"target_table": {
+						"type": "string"
+					},
+					"target_schema": {
+						"type": "string"
+					}
+				},
+				"variables": {
+					"aaaa": {
+						"type": "String"
+					},
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "BRAVO"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-23T06:27:38Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/gs_bravo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE FACT CHILD MANUAL2')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "gs_bravo",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": "''",
+									"name": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1').output.value",
+								"type": "Expression"
+							},
+							"batchCount": 3,
+							"activities": [
+								{
+									"name": "Switch1",
+									"type": "Switch",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"on": {
+											"value": "@pipeline().parameters.DB",
+											"type": "Expression"
+										},
+										"cases": [
+											{
+												"value": "BRAVO",
+												"activities": [
+													{
+														"name": "Copy data1_copy1",
+														"type": "Copy",
+														"dependsOn": [],
+														"policy": {
+															"timeout": "0.12:00:00",
+															"retry": 0,
+															"retryIntervalInSeconds": 30,
+															"secureOutput": false,
+															"secureInput": false
+														},
+														"userProperties": [],
+														"typeProperties": {
+															"source": {
+																"type": "SqlServerSource",
+																"additionalColumns": [
+																	{
+																		"name": "Entity",
+																		"value": {
+																			"value": "@{pipeline().parameters.ENTITY}",
+																			"type": "Expression"
+																		}
+																	},
+																	{
+																		"name": "W_BATCH_ID",
+																		"value": {
+																			"value": "@pipeline().parameters.W_BATCH_ID",
+																			"type": "Expression"
+																		}
+																	},
+																	{
+																		"name": "W_INSERT_DATE",
+																		"value": {
+																			"value": "@addhours(utcnow(),7)",
+																			"type": "Expression"
+																		}
+																	},
+																	{
+																		"name": "W_DATASOURCE_NAME",
+																		"value": "BRAVO"
+																	},
+																	{
+																		"name": "Doc_date1",
+																		"value": {
+																			"value": "@item().FROM_DATE",
+																			"type": "Expression"
+																		}
+																	},
+																	{
+																		"name": "Doc_date2",
+																		"value": {
+																			"value": "@item().TO_DATE",
+																			"type": "Expression"
+																		}
+																	},
+																	{
+																		"name": "W_ACCOUNT",
+																		"value": {
+																			"value": "@pipeline().parameters.W_ACCOUNT",
+																			"type": "Expression"
+																		}
+																	}
+																],
+																"sqlReaderQuery": {
+																	"value": "@replace(replace(replace(pipeline().parameters.script,'{param_2}',item().TO_DATE),'{param_3}',pipeline().parameters.ENTITY),'{param_1}',item().FROM_DATE)",
+																	"type": "Expression"
+																},
+																"queryTimeout": "02:00:00",
+																"partitionOption": "None"
+															},
+															"sink": {
+																"type": "SqlDWSink",
+																"writeBehavior": "Insert"
+															},
+															"enableStaging": false,
+															"translator": {
+																"type": "TabularTranslator",
+																"typeConversion": true,
+																"typeConversionSettings": {
+																	"allowDataTruncation": true,
+																	"treatBooleanAsNumber": false
+																}
+															}
+														},
+														"inputs": [
+															{
+																"referenceName": "gs_bravo",
+																"type": "DatasetReference",
+																"parameters": {
+																	"schema": "''",
+																	"name": "''"
+																}
+															}
+														],
+														"outputs": [
+															{
+																"referenceName": "PGSWH",
+																"type": "DatasetReference",
+																"parameters": {
+																	"Schema": "''",
+																	"Table": "''"
+																}
+															}
+														]
+													}
+												]
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ENTITY": {
+						"type": "string",
+						"defaultValue": "A01"
+					},
+					"script": {
+						"type": "string",
+						"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+					},
+					"TGT_TABLE": {
+						"type": "string",
+						"defaultValue": "[[STG].[W_BRAVO_CONSO_GL_FOR_DA_FS]"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"W_BATCH_ID": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"DB": {
+						"type": "string"
+					},
+					"RUN_MANUAL": {
+						"type": "int",
+						"defaultValue": 0
+					}
+				},
+				"variables": {
+					"script": {
+						"type": "String",
+						"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+					},
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/gs_bravo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SDE')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Job",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderStoredProcedureName": "[[ADF].[proc_etl_get_job]",
+								"storedProcedureParameters": {
+									"group_name": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.GROUP_NAME",
+											"type": "Expression"
+										}
+									},
+									"group_number": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.GROUP_NUMBER",
+											"type": "Expression"
+										}
+									},
+									"p_batch_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.BATCH_ID",
+											"type": "Expression"
+										}
+									},
+									"p_job_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.JOB_GROUP",
+											"type": "Expression"
+										}
+									},
+									"p_job_id": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.JOB_ID",
+											"type": "Expression"
+										}
+									},
+									"p_job_sub_group": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.JOB_SUB_GROUP",
+											"type": "Expression"
+										}
+									},
+									"p_order": {
+										"type": "String",
+										"value": "1"
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get Job",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get Job').output.value",
+								"type": "Expression"
+							},
+							"batchCount": 1,
+							"activities": [
+								{
+									"name": "Start Log",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[ADF].[proc_etl_log_message]",
+										"storedProcedureParameters": {
+											"p_batch_id": {
+												"value": {
+													"value": "@pipeline().parameters.BATCH_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_error_code": {
+												"value": "",
+												"type": "String"
+											},
+											"p_error_message": {
+												"value": "",
+												"type": "String"
+											},
+											"p_job_id": {
+												"value": {
+													"value": "@pipeline().parameters.JOB_ID",
+													"type": "Expression"
+												},
+												"type": "Int64"
+											},
+											"p_log_message": {
+												"value": "start job",
+												"type": "String"
+											},
+											"p_log_status": {
+												"value": "START ",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "PGSWH",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Copy data1",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "Start Log",
+											"dependencyConditions": [
+												"Completed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "SqlServerSource",
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "SqlDWSink",
+											"writeBehavior": "Insert",
+											"sqlWriterUseTableLock": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "gs_bravo",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema": "''",
+												"name": "''"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "PGSWH",
+											"type": "DatasetReference",
+											"parameters": {
+												"Schema": "''",
+												"Table": "''"
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"BATCH_ID": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"JOB_ID": {
+						"type": "string"
+					},
+					"JOB_SUB_GROUP": {
+						"type": "string",
+						"defaultValue": "SDE"
+					},
+					"GROUP_NUMBER": {
+						"type": "string",
+						"defaultValue": "01"
+					},
+					"GROUP_NAME": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"JOB_GROUP": {
+						"type": "string",
+						"defaultValue": "BRV"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-23T07:01:38Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/gs_bravo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SIL GROUP')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlDWSource",
+								"sqlReaderQuery": {
+									"value": "SELECT DISTINCT [ORDER] FROM [ADF].[ETL_JOB] WHERE job_sub_group = '@{pipeline().parameters.job_sub_group}'\nAND CASE WHEN '@{pipeline().parameters.job_id}'= 'ALL' THEN job_id ELSE CAST('@{pipeline().parameters.job_id}' AS BIGINT) END = job_id\nAND CASE WHEN '@{pipeline().parameters.job_group}'= 'ALL' THEN job_group ELSE '@{pipeline().parameters.job_group}' END = job_group\nAND\ncase\nWHEN\n'@{pipeline().parameters.group_number}' = 'ALL'  THEN '1'\nwhen '@{pipeline().parameters.group_number}' = '01' then [GROUP_01]\nwhen '@{pipeline().parameters.group_number}' = '02' then [GROUP_02]\nwhen '@{pipeline().parameters.group_number}' = '03' then [GROUP_03]\nwhen '@{pipeline().parameters.group_number}' = '04' then [GROUP_04]\nwhen '@{pipeline().parameters.group_number}' = '05' then [GROUP_05]\nwhen '@{pipeline().parameters.group_number}' = '06' then [GROUP_06]\nwhen '@{pipeline().parameters.group_number}' = '07' then [GROUP_07]\nwhen '@{pipeline().parameters.group_number}' = '08' then [GROUP_08]\nwhen '@{pipeline().parameters.group_number}' = '09' then [GROUP_09]\nwhen '@{pipeline().parameters.group_number}' = '10' then [GROUP_10] END = (CASE WHEN '@{pipeline().parameters.group_number}' = 'ALL'  THEN '1' ELSE '@{pipeline().parameters.group_name}' END)\nAND [ACTIVE_FLG] = 'Y'\nORDER BY [ORDER]",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "''",
+									"Table": "''"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup1').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "SIL_PIPELINE",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"policy": {
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "SIL PIPELINE",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"p_batch_id": {
+												"value": "@pipeline().parameters.batch_id",
+												"type": "Expression"
+											},
+											"p_job_group": {
+												"value": "@pipeline().parameters.job_group",
+												"type": "Expression"
+											},
+											"p_job_id": {
+												"value": "@pipeline().parameters.job_id",
+												"type": "Expression"
+											},
+											"p_order": {
+												"value": "@item().ORDER",
+												"type": "Expression"
+											},
+											"group_name": {
+												"value": "@pipeline().parameters.group_name",
+												"type": "Expression"
+											},
+											"group_number": {
+												"value": "@pipeline().parameters.group_number",
+												"type": "Expression"
+											},
+											"p_job_sub_group": {
+												"value": "@pipeline().parameters.job_sub_group",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"job_sub_group": {
+						"type": "string",
+						"defaultValue": "SIL"
+					},
+					"job_id": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"job_group": {
+						"type": "string"
+					},
+					"group_number": {
+						"type": "string",
+						"defaultValue": "ALL"
+					},
+					"group_name": {
+						"type": "string",
+						"defaultValue": "DX01"
+					},
+					"batch_id": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-23T07:01:39Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/SIL PIPELINE')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/call_sp')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy data1",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"additionalColumns": [
+									{
+										"name": "Entity",
+										"value": "A03"
+									},
+									{
+										"name": "Doc_date1",
+										"value": "20230101"
+									},
+									{
+										"name": "Doc_date2",
+										"value": "20230131"
+									},
+									{
+										"name": "W_BATCH_ID",
+										"value": "20240108"
+									},
+									{
+										"name": "W_INSERT_DATE",
+										"value": "20240108"
+									},
+									{
+										"name": "W_DATASOURCE_NAME",
+										"value": "BRV"
+									}
+								],
+								"sqlReaderQuery": "exec [dbo].[usp_Kcd_BaoCaoCongNoHanThanhToan_TruDan] @_DocDate1 = 'JAN 01 2024',@_DocDate2 = 'JAN 31 2024',@_Account = '331',@_CustomerCode = '',@_lookupModeCustomer = 0,@_CustomerGroupCode = N'',@_Period  = 10,@_RepType = 1,@_IsPrepaymentInclude = 1,@_ForeignCurrencyOnly = 0,@_nUserId = 4,@_LangId  = 0,@_Ma_Dvcs = 'A16',@_CurrencyCode0 = 'VND',@_Detail = 0,@_GroupCodeRep = 'KV_MIENTRUNG',@_IsOverDue = 0,@_LAYOUT_XML = ''",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "SqlDWSink",
+								"writeBehavior": "Insert",
+								"sqlWriterUseTableLock": false,
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "gs_bravo",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": "''",
+									"name": "''"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "PGSWH",
+								"type": "DatasetReference",
+								"parameters": {
+									"Schema": "STG",
+									"Table": "W_FS_BRV_SOSANHDODANGTHEOTHANG"
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-23T07:01:38Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/gs_bravo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BRAVO SDE FACT CHILD TEST')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "If Condition1",
+						"type": "IfCondition",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(pipeline().parameters.RUN_MANUAL,'0')",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "BRAVO SDE FACT CHILD",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"policy": {
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "BRAVO SDE FACT CHILD MANUAL2",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"ENTITY": {
+												"value": "@pipeline().parameters.ENTITY",
+												"type": "Expression"
+											},
+											"script": {
+												"value": "@pipeline().parameters.script",
+												"type": "Expression"
+											},
+											"TGT_TABLE": {
+												"value": "@pipeline().parameters.TGT_TABLE",
+												"type": "Expression"
+											},
+											"W_ACCOUNT": {
+												"value": "@pipeline().parameters.W_ACCOUNT",
+												"type": "Expression"
+											},
+											"W_BATCH_ID": {
+												"value": "@pipeline().parameters.W_BATCH_ID",
+												"type": "Expression"
+											},
+											"DB": {
+												"value": "@pipeline().parameters.DB",
+												"type": "Expression"
+											}
+										}
+									}
+								},
+								{
+									"name": "BRAVO SDE FACT CHILD_copy1",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"policy": {
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "BRAVO SDE FACT CHILD MANUAL2",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"ENTITY": {
+												"value": "@pipeline().parameters.ENTITY",
+												"type": "Expression"
+											},
+											"script": {
+												"value": "@pipeline().parameters.script",
+												"type": "Expression"
+											},
+											"TGT_TABLE": {
+												"value": "@pipeline().parameters.TGT_TABLE",
+												"type": "Expression"
+											},
+											"W_ACCOUNT": {
+												"value": "@pipeline().parameters.W_ACCOUNT",
+												"type": "Expression"
+											},
+											"W_BATCH_ID": {
+												"value": "@pipeline().parameters.W_BATCH_ID",
+												"type": "Expression"
+											},
+											"DB": {
+												"value": "@pipeline().parameters.DB",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "BRAVO SDE FACT CHILD AUTO",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"policy": {
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "BRAVO SDE FACT CHILD AUTO2",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"ENTITY": {
+												"value": "@pipeline().parameters.ENTITY",
+												"type": "Expression"
+											},
+											"script": {
+												"value": "@pipeline().parameters.script",
+												"type": "Expression"
+											},
+											"TGT_TABLE": {
+												"value": "@pipeline().parameters.TGT_TABLE",
+												"type": "Expression"
+											},
+											"W_ACCOUNT": {
+												"value": "@pipeline().parameters.W_ACCOUNT",
+												"type": "Expression"
+											},
+											"W_BATCH_ID": {
+												"value": "@pipeline().parameters.W_BATCH_ID",
+												"type": "Expression"
+											},
+											"DB": {
+												"value": "@pipeline().parameters.DB",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ENTITY": {
+						"type": "string",
+						"defaultValue": "A01"
+					},
+					"script": {
+						"type": "string",
+						"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+					},
+					"TGT_TABLE": {
+						"type": "string",
+						"defaultValue": "[[STG].[W_BRAVO_CONSO_GL_FOR_DA_FS]"
+					},
+					"W_ACCOUNT": {
+						"type": "string"
+					},
+					"W_BATCH_ID": {
+						"type": "string",
+						"defaultValue": "1"
+					},
+					"DB": {
+						"type": "string"
+					},
+					"RUN_MANUAL": {
+						"type": "string",
+						"defaultValue": "0"
+					}
+				},
+				"variables": {
+					"script": {
+						"type": "String",
+						"defaultValue": "exec usp_Kqt_BangCanDoiKeToan200_BI @_DocDate2 = '{param_2}', @_Ma_Dvcs = '{param_3}'"
+					},
+					"batch_id": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "TEST"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-02-19T10:03:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/BRAVO SDE FACT CHILD MANUAL2')]",
+				"[concat(variables('factoryId'), '/pipelines/BRAVO SDE FACT CHILD AUTO2')]"
+			]
+		}
+	]
+}
